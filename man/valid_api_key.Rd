@@ -4,7 +4,7 @@
 \alias{valid_api_key}
 \title{Check if a qualtrics API key has been set.}
 \usage{
-valid_api_key()
+valid_api_key(api_key)
 }
 \description{
 Check if a qualtrics API key has been set.
