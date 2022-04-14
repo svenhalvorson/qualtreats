@@ -19,20 +19,19 @@ get_responses = function(
   # Argument checks:
   stopifnot(
     valid_survey_id(survey_id),
-    valid_api_key(),
+    valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
+    valid_base_url(Sys.getenv('QUALTRICS_BASE_URL')),
     valid_out_dir(out_dir)
   )
 
   file_format = rlang::arg_match(file_format)
 
   # Survey url:
-  get_download_url = function(survey_id){
-    paste0(
-      'https://oregon.ca1.qualtrics.com/API/v3/surveys/',
-      survey_id,
-      '/export-responses/'
-    )
-  }
+  get_download_url = stringr::str_glue(
+    'https://{base_url}/API/v3/surveys/{survey_id}/export-responses/',
+    base_url = Sys.getenv("QUALTRICS_BASE_URL"),
+    survey_id = survey_id
+  )
 
   # Headers
   headers = headers = c(
@@ -108,7 +107,6 @@ get_responses = function(
   )
 
   file_content =  httr::content(file, raw = TRUE)
-  browser()
 
   # Then we write the file_content to a temporary directory and extract it
   temp_dir = tempdir()
@@ -126,26 +124,28 @@ get_responses = function(
     exdir = ifelse(is.null(out_dir), temp_dir, out_dir)
   )
 
-  if(file_format == 'spss'){
-    invisible(haven::read_sav(responses_file))
-  } else{
 
-    read_fun = switch(
-      file_format,
-      csv = readr::read_csv,
-      tsv = readr::read_tsv
-    )
+  # Now read it in:
+  read_fun = switch(
+    file_format,
+    csv = readr::read_csv,
+    tsv = readr::read_tsv,
+    spss = haven::read_sav
+  )
 
-    responses = read_fun(responses_file)
+  responses = read_fun(responses_file)
 
+  if(file_format != 'spss'){
+
+    # apply value labels
     for(i in seq_along(responses)){
-
       expss::var_lab(responses[[i]]) = responses[1,i]
-
     }
 
-    invisible(responses)
+    responses = dplyr::slice(responses, 3:dplyr::n())
 
   }
+
+  invisible(responses)
 
 }
