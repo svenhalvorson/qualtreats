@@ -1,15 +1,14 @@
-#' Get Qualtrics Survey Information
+#' Get Information on a Qualtrics Survey
 #' @description Retrieve a JSON object that has information on a given survey.
 #' There are currently three different api calls that can be specified by
 #' the \code{type} argument:
 #' \itemize{
-#'   \item \code{survey} gives the structure of the survye in a similar
+#'   \item \code{survey} gives the structure of the survey in a similar
 #'   \emph{but not identical} format as downloading the metadata
 #'   \item \code{definitions} contains information about the survey's body such as the flow, blocks, questions ect.
 #'   \item \code{metadata} holds information about survey settings such as the name and status
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
-#' @param out_path path to .txt file where JSON version of the return value can be written.
 #' @param type specify which API call to perform
 #' @return a list containing the results of the API call
 #' @export
@@ -20,9 +19,8 @@
 #'   \item \href{can't find this rn}{definitions}
 #'   \item \href{https://api.qualtrics.com/api-reference/b3A6NjEwNzk-get-survey-metadata}{metadata}
 #' }
-get_survey_info = function(
+get_survey = function(
   survey_id,
-  out_path = NULL,
   type = c('survey', 'definitions', 'metadata')
 ){
 
@@ -31,7 +29,6 @@ get_survey_info = function(
     valid_survey_id(survey_id),
     valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
     valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
-    # Check out_path?
   )
   type = rlang::arg_match(type)
 
@@ -64,13 +61,6 @@ get_survey_info = function(
   ) %>%
     httr::content() %>%
     purrr::pluck('result')
-
-  if(!is.null(out_path)){
-    write(
-      x = jsonlite::toJSON(result),
-      file = out_path
-    )
-  }
 
   invisible(result)
 
