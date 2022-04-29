@@ -96,15 +96,12 @@ flatten_survey = function(
 }
 
 
-# Block flattener:
 flatten_blocks = function(
   survey
 ){
 
-  # Get all the survey blocks and their descriptions
   blocks = survey[['blocks']]
 
-  # Make the table
   block_df = tibble::tibble(
     block_order = 1:length(blocks),
     block_id = names(blocks),
@@ -129,6 +126,168 @@ flatten_blocks = function(
 }
 
 
+# This one makes the links between questions and blocks:
+flatten_question_block = function(
+  survey
+){
+
+  blocks = survey[['blocks']]
+  block_ids = names(blocks)
+
+
+  get_qids = function(block, block_id){
+
+    # Keep only the questions and return empty tibble if none found
+    elements = block[['elements']]
+    elements = purrr::keep(
+      .x = elements,
+      .p = function(x){x[['type']] == 'Question'}
+    )
+
+    if(length(elements) == 0){
+      # return a tibble without rows
+      tibble::tribble(~block_id, ~question_id)
+    } else{
+
+      # Otherwise get each of the qids out:
+      tibble::tibble(
+        block_id = block_id,
+        question_id = purrr::map_chr(
+          .x = elements,
+          .f = function(x){x[['questionId']]}
+        )
+      )
+    }
+  }
+
+  purrr::map2_dfr(
+    .x = blocks,
+    .y = names(blocks),
+    .f = get_qids
+  )
+
+}
+
+
+flatten_questions = function(
+  survey
+){
+
+  questions = survey[['questions']]
+  question_ids = names(questions)
+
+
+  # get the attributes of questions:
+  get_question_deets = function(question_id){
+
+
+    question = questions[[question_id]]
+
+    tibble::tibble(
+      'question_id' = question_id,
+      'question_name' = subset_safely(question, 'questionName'),
+      'question_text' = subset_safely(question, 'questionText'),
+      'question_label' = subset_safely(question, 'questionLabel'),
+      'question_type' = subset_safely(question[['questionType']], 'type'),
+      'selector' = subset_safely(question[['questionType']], 'selector'),
+      'sub_selector' = subset_safely(question[['questionType']], 'subSelector')
+    )
+  }
+
+  question_df = purrr::map_dfr(
+    .x = question_ids,
+    .f = get_question_deets
+  )
+
+
+
+  # Then we also want to get the subquestions from matrix style entry:
+  matrix_questions = purrr::keep(
+    .x = questions,
+    .p = function(x){
+      x[['questionType']][['type']] %in% c('Matrix', 'SBS')
+    }
+  )
+
+  get_subquestions = function(question_id){
+
+    question = questions[[question_id]]
+    sub_questions = question[['subQuestions']]
+
+    get_subquestion_deets = function(sub_question_num){
+
+      sub_question = sub_questions[[sub_question_num]]
+
+      tibble::tibble(
+        'question_id' = question_id,
+        'subq_num'  = sub_question_num,
+        'subq_recode' = sub_question[['recode']],
+        'subq_description' = sub_question[['description']],
+        'subq_choiceText' = sub_question[['choiceText']],
+        'subq_text_entry' = as.numeric('textEntry' %in% names(sub_question))
+      )
+
+    }
+
+    subquestion_df = purrr::map_dfr(
+      .x = names(sub_questions),
+      .f = get_subquestion_deets
+    )
+  }
+
+  browser()
+
+  subquestion_df = purrr::map_dfr(
+    .x = names(matrix_questions),
+    .f = get_subquestions
+  )
+
+  # Set the column order of the output:
+  col_order = c(
+    'question_id',
+    'question_name',
+    'question_text',
+    'question_text_clean',
+    'question_label',
+    'question_type',
+    'selector',
+    'sub_selector',
+    'subq_num',
+    'subq_recode',
+    'subq_description',
+    'subq_choice_text',
+    'subq_text_entry'
+  )
+
+  # Sometimes there will be no matrix questions so:
+  if(nrow(subquestion_df) > 0){
+    question_df = question_df %>%
+      dplyr::left_join(
+        subquestion_df ,
+        by = 'questionId'
+      )
+  }
+
+  question_df = question_df %>%
+    # Strip away HTML nonsense
+    dplyr::mutate(
+      questionText_clean = stringr::str_remove_all(
+        string = questionText,
+        pattern = '<[^>]*>'
+      ),
+      questionText_clean = stringr::str_replace_all(
+        string = questionText_clean,
+        pattern = '\\n|\\t',
+        replacement = ' '
+      )
+    ) %>%
+    dplyr::select(
+      dplyr::any_of(col_order)
+    )
+
+  question_df
+
+}
 
 # flatten_choices = function(
 #   survey
@@ -326,64 +485,6 @@ flatten_blocks = function(
 #   choice_df
 #
 # }
-#
-#
-# flatten_question_block = function(
-#   survey
-# ){
-#
-#   check_out_path(out_path, file_format)
-#
-#   # Here we'll just export a cross of the block ids and qids for joining purposes
-#   blocks = survey[['blocks']]
-#   block_ids = names(blocks)
-#
-#
-#   get_qids = function(block, block_id){
-#
-#     # Keep only the questions and return empty tibble if none found
-#     elements = block[['elements']]
-#     elements = purrr::keep(
-#       .x = elements,
-#       .p = function(x){x[['type']] == 'Question'}
-#     )
-#
-#     if(length(elements) == 0){
-#       tribble(~block_id, ~questionId)
-#     } else{
-#
-#       # Otherwise get each of the qids out:
-#       tibble::tibble(
-#         block_id = block_id,
-#         questionId = purrr::map_chr(
-#           .x = elements,
-#           .f = function(x){x[['questionId']]}
-#         )
-#       )
-#     }
-#   }
-#
-#   block_question_df = purrr::map2_dfr(
-#     .x = blocks,
-#     .y = names(blocks),
-#     .f = get_qids
-#   )
-#
-#   if(!is.null(out_path)){
-#
-#     write_fun = ifelse(
-#       file_format == 'tsv',
-#       readr::write_tsv,
-#       readr::write_csv
-#     )
-#
-#     write_fun(
-#       x = block_question_df,
-#       file = out_path
-#     )
-#   }
-#
-#   block_question_df
-#
-# }
+
+
 
