@@ -27,7 +27,7 @@ get_responses = function(
   file_format = rlang::arg_match(file_format)
 
   # Survey url:
-  get_download_url = stringr::str_glue(
+  download_url = stringr::str_glue(
     'https://{base_url}/API/v3/surveys/{survey_id}/export-responses/',
     base_url = Sys.getenv("QUALTRICS_BASE_URL"),
     survey_id = survey_id
@@ -56,7 +56,7 @@ get_responses = function(
   # Next we make the request from qualtrics:
   result = httr::VERB(
     verb = 'POST',
-    url = get_download_url(survey_id),
+    url = download_url,
     httr::add_headers(headers),
     body = payload
   ) %>%
@@ -68,7 +68,7 @@ get_responses = function(
   # what purpose it serves other than being used for a download
   # progress bar. It is necessary though
   check_url = paste0(
-    get_download_url(survey_id),
+    download_url,
     request_id
   )
 
@@ -95,18 +95,18 @@ get_responses = function(
 
   # Now we make a new url for the file using this request ID
   file_url = paste0(
-    get_download_url(survey_id),
+    download_url,
     CU$result$fileId,
     '/file'
   )
 
   # Download file:
-  file = httr::GET(
+  file_response = httr::GET(
     file_url,
     httr::add_headers(headers)
   )
 
-  file_content =  httr::content(file, raw = TRUE)
+  file_content =  httr::content(file_response, raw = TRUE)
 
   # Then we write the file_content to a temporary directory and extract it
   temp_dir = tempdir()
@@ -129,7 +129,7 @@ get_responses = function(
   read_fun = switch(
     file_format,
     csv = readr::read_csv,
-    tsv = readr::read_tsv,
+    tsv = function(x){read.delim2(file = x, fileEncoding = 'UTF-16')},
     spss = haven::read_sav
   )
 
