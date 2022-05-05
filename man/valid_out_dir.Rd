@@ -6,6 +6,9 @@
 \usage{
 valid_out_dir(out_dir)
 }
+\arguments{
+\item{out_dir}{a string to a directory}
+}
 \description{
 Check if a directory can be written to:
 }

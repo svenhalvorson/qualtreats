@@ -6,6 +6,10 @@
 \usage{
 valid_base_url(base_url)
 }
+\arguments{
+\item{base_url}{the prefix of your Qualtrics url between "https://" and ".qualtrics.com"}
+}
 \description{
 Check if a qualtrics base url is set
 }
+\keyword{internal}

@@ -6,6 +6,9 @@
 \usage{
 valid_api_key(api_key)
 }
+\arguments{
+\item{api_key}{Qualtrics API key}
+}
 \description{
 Check if a qualtrics API key has been set.
 }
