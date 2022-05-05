@@ -6,7 +6,7 @@
 #' @param file_prefix string prefix to file names
 #' @param file_format one of \code{c('tsv', 'csv')}
 #' @return a named list of the four tables generated
-#' @export
+#' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 
 flatten_survey = function(
@@ -22,12 +22,11 @@ flatten_survey = function(
       valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
       valid_base_url(Sys.getenv('QUALTRICS_BASE_URL')),
       is.null(out_dir) || dir.exists(out_dir),
-      is.character(file_prefix) & length(file_prefix) == 1,
-      is.null(out_dir) || (is.character(file_prefix) & length(file_prefix) == 1)
+      is.character(file_prefix) & length(file_prefix) == 1
     )
   )
 
-  type = rlang::arg_match(type)
+  file_format = rlang::arg_match(file_format)
 
   # Get the survey information to be used by all other functions:
   survey = get_survey(
@@ -66,6 +65,7 @@ flatten_survey = function(
       out_dir = paste0(out_dir, '/')
     }
 
+
     file_names = paste0(
       file_prefix,
       ifelse(
@@ -79,9 +79,7 @@ flatten_survey = function(
     )
 
 
-    file_paths = paste0(
-      out_dir
-    )
+    file_paths = paste0(out_dir, file_names)
 
     purrr::walk2(
       .x = results,
@@ -200,7 +198,6 @@ flatten_questions = function(
   )
 
 
-
   # Then we also want to get the subquestions from matrix style entry:
   matrix_questions = purrr::keep(
     .x = questions,
@@ -223,7 +220,7 @@ flatten_questions = function(
         'subq_num'  = sub_question_num,
         'subq_recode' = sub_question[['recode']],
         'subq_description' = sub_question[['description']],
-        'subq_choiceText' = sub_question[['choiceText']],
+        'subq_choice_text' = sub_question[['choiceText']],
         'subq_text_entry' = as.numeric('textEntry' %in% names(sub_question))
       )
 
@@ -234,8 +231,6 @@ flatten_questions = function(
       .f = get_subquestion_deets
     )
   }
-
-  browser()
 
   subquestion_df = purrr::map_dfr(
     .x = names(matrix_questions),
@@ -264,19 +259,19 @@ flatten_questions = function(
     question_df = question_df %>%
       dplyr::left_join(
         subquestion_df ,
-        by = 'questionId'
+        by = 'question_id'
       )
   }
 
   question_df = question_df %>%
     # Strip away HTML nonsense
     dplyr::mutate(
-      questionText_clean = stringr::str_remove_all(
-        string = questionText,
+      question_text_clean = stringr::str_remove_all(
+        string = question_text,
         pattern = '<[^>]*>'
       ),
-      questionText_clean = stringr::str_replace_all(
-        string = questionText_clean,
+      question_text_clean = stringr::str_replace_all(
+        string = question_text_clean,
         pattern = '\\n|\\t',
         replacement = ' '
       )
@@ -289,202 +284,178 @@ flatten_questions = function(
 
 }
 
-# flatten_choices = function(
-#   survey
-# ){
-#
-#   # Use this to guard against cases where piece of the JSON object
-#   # is missing:
-#   replace_null = function(x){
-#     ifelse(is.null(x), '', x)
-#   }
-#
-#   # Preserve the order that the QIDs appear in for ease of viewing:
-#   question_order = names(survey[['questions']])
-#
-#   # Extracting the choices is only valid for a few qustions types. We will treat
-#   # the side by side (SBS) type differently than multiple choice, matrix, & forms
-#   # since it's kind of like multiple of those put together. Partition the questions:
-#
-#   questions_sbs = purrr::keep(
-#     .x = survey[['questions']],
-#     .p = function(x){
-#       x[['questionType']][['type']] == 'SBS'
-#     }
-#   )
-#
-#   questions = purrr::keep(
-#     .x = survey[['questions']],
-#     .p = function(x){
-#       x[['questionType']][['type']] %in% c('MC', 'Matrix') |
-#         x[['questionType']][['selector']] == 'FORM'}
-#   )
-#
-#
-#   # We'll use this function to extract the details of a choice:
-#   extract_choice = function(
-#     qid,
-#     choice_list,
-#     choice_name
-#   ){
-#
-#     tibble::tibble(
-#       'questionId' = qid,
-#       'choice' = choice_name,
-#       'choice_description' = replace_null(choice_list[['description']]),
-#       'choiceText' = replace_null(choice_list[['choiceText']]),
-#       'choice_recode' = replace_null(choice_list[['recode']]),
-#       'textEntry' = 'textEntry' %in% names(choice_list),
-#       'analyze' = replace_null(choice_list[['analyze']])
-#     )
-#   }
-#
-#   # Use this for the non-sbs questions:
-#   get_choices = function(qid){
-#
-#     choices = questions[[qid]][['choices']]
-#
-#     # For each choice, we make a row of a data frame here:
-#     purrr::pmap_dfr(
-#       .l = list(
-#         qid,
-#         choices,
-#         names(choices)
-#       ),
-#       .f = extract_choice
-#     )
-#   }
-#
-#
-#   # Get non-sbs choices -----------------------------------------------------
-#
-#   # Now apply these functions to each of the
-#   choice_df = purrr::map_dfr(
-#     .x = names(questions),
-#     .f = get_choices
-#   )
-#
-#   # Now deal with the SBS questions. First need to extract all the columns used.
-#   # This should actually mimic flatten_questions a bit since it's like
-#   # we have multiple questions together
-#
-#   extract_column = function(qid, column, column_num){
-#
-#     question_type = column[['questionType']]
-#
-#     tibble::tibble(
-#       'questionId' = qid,
-#       'column_num' = column_num,
-#       'column_text' = column[['questionText']],
-#       'column_label' = replace_null(column[['questionLabel']]),
-#       'column_type' = question_type[['type']],
-#       'column_selector' = replace_null(question_type[['selector']]),
-#       'column_subselector' = replace_null(question_type[['subSelector']])
-#     )
-#   }
-#
-#
-#   # Get SBS choices ---------------------------------------------------------
-#
-#   # Frequently this won't be needed:
-#   if(length(questions_sbs) > 0){
-#
-#     get_columns = function(qid){
-#
-#       columns = questions_sbs[[qid]][['columns']]
-#       column_names = names(columns)
-#
-#       purrr::pmap_dfr(
-#         .l = list(
-#           qid,
-#           columns,
-#           names(columns)
-#         ),
-#         .f = extract_column
-#       )
-#
-#
-#     }
-#
-#     column_sbs_df = purrr::map_dfr(
-#       .x = names(questions_sbs),
-#       .f = get_columns
-#     )
-#
-#     # Then we have to go through all these columns,
-#     # and run a version of extract_choice on them.
-#     get_column_choices = function(qid, column_num){
-#
-#       choices = questions_sbs[[qid]][['columns']][[column_num]][['choices']]
-#
-#       # For each choice, we make a row of a data frame here:
-#       purrr::pmap_dfr(
-#         .l = list(
-#           qid,
-#           choices,
-#           names(choices)
-#         ),
-#         .f = extract_choice
-#       ) %>%
-#         dplyr::mutate(column_num = column_num)
-#     }
-#
-#     column_sbs_df = column_sbs_df %>%
-#       dplyr::left_join(
-#         purrr::map2_dfr(
-#           .x = column_sbs_df[['questionId']],
-#           .y = column_sbs_df[['column_num']],
-#           .f = get_column_choices
-#         ),
-#         by = c('questionId', 'column_num')
-#       )
-#
-#     choice_df = dplyr::bind_rows(choice_df, column_sbs_df)
-#
-#     choice_df = tibble::tibble(
-#       questionId = question_order
-#     ) %>%
-#       dplyr::left_join(choice_df)
-#
-#   } else{
-#
-#     # Ensure that these columns exist even if there are no SBS
-#     # questions for uniformity of output:
-#     for(column in c(
-#       'column_num',
-#       'column_text',
-#       'column_label',
-#       'column_type',
-#       'column_selector',
-#       'column_subselector'
-#     )
-#     ){
-#       choice_df[column] = NA_character_
-#     }
-#
-#   }
-#
-#
-#   # Finish ------------------------------------------------------------------
-#
-#   # Write:
-#   if(!is.null(out_path)){
-#
-#     write_fun = ifelse(
-#       file_format == 'tsv',
-#       readr::write_tsv,
-#       readr::write_csv
-#     )
-#
-#     write_fun(
-#       x = choice_df,
-#       file = out_path
-#     )
-#   }
-#
-#   choice_df
-#
-# }
+flatten_choices = function(
+  survey
+){
+
+  # Preserve the order that the QIDs appear in for ease of viewing:
+  question_order = names(survey[['questions']])
+
+  # Extracting the choices is only valid for a few qustions types. We will treat
+  # the side by side (SBS) type differently than multiple choice, matrix, & forms
+  # since it's kind of like multiple of those put together. Partition the questions:
+
+  questions_sbs = purrr::keep(
+    .x = survey[['questions']],
+    .p = function(x){
+      x[['questionType']][['type']] == 'SBS'
+    }
+  )
+
+  questions = purrr::keep(
+    .x = survey[['questions']],
+    .p = function(x){
+      x[['questionType']][['type']] %in% c('MC', 'Matrix') |
+        x[['questionType']][['selector']] == 'FORM'}
+  )
+
+
+  # We'll use this function to extract the details of a choice:
+  extract_choice = function(
+    qid,
+    choice_list,
+    choice_name
+  ){
+
+    #TODO: decide if we care the form field entries have text_entry = FALSE
+
+    tibble::tibble(
+      'question_id' = qid,
+      'choice' = choice_name,
+      'choice_description' = subset_safely(choice_list, 'description'),
+      'choice_text' = subset_safely(choice_list, 'choiceText'),
+      'choice_recode' = subset_safely(choice_list, 'recode'),
+      'text_entry' = 'textEntry' %in% names(choice_list),
+      'analyze' = subset_safely(choice_list, 'analyze')
+    )
+  }
+
+  # Use this for the non-sbs questions:
+  get_choices = function(qid){
+
+    choices = questions[[qid]][['choices']]
+
+    # For each choice, we make a row of a data frame here:
+    purrr::pmap_dfr(
+      .l = list(
+        qid,
+        choices,
+        names(choices)
+      ),
+      .f = extract_choice
+    )
+  }
+
+  # Now apply these functions to each of the
+  choice_df = purrr::map_dfr(
+    .x = names(questions),
+    .f = get_choices
+  )
+
+
+  # Now deal with the SBS questions. First need to extract all the columns used.
+  # This should actually mimic flatten_questions a bit since it's like
+  # we have multiple questions together
+
+  extract_column = function(qid, column, column_num){
+
+    question_type = column[['questionType']]
+
+    tibble::tibble(
+      'question_id' = qid,
+      'column_num' = column_num,
+      'column_text' = column[['questionText']],
+      'column_label' = subset_safely(column, 'questionLabel'),
+      'column_type' = question_type[['type']],
+      'column_selector' = subset_safely(question_type, 'selector'),
+      'column_subselector' = subset_safely(question_type, 'subSelector')
+    )
+  }
+
+  # Frequently this won't be needed:
+  if(length(questions_sbs) > 0){
+
+    get_columns = function(qid){
+
+      columns = questions_sbs[[qid]][['columns']]
+      column_names = names(columns)
+
+      purrr::pmap_dfr(
+        .l = list(
+          qid,
+          columns,
+          names(columns)
+        ),
+        .f = extract_column
+      )
+
+
+    }
+
+    column_sbs_df = purrr::map_dfr(
+      .x = names(questions_sbs),
+      .f = get_columns
+    )
+
+    # Then we have to go through all these columns,
+    # and run a version of extract_choice on them.
+    get_column_choices = function(qid, column_num){
+
+      choices = questions_sbs[[qid]][['columns']][[column_num]][['choices']]
+
+      # For each choice, we make a row of a data frame here:
+      purrr::pmap_dfr(
+        .l = list(
+          qid,
+          choices,
+          names(choices)
+        ),
+        .f = extract_choice
+      ) %>%
+        dplyr::mutate(column_num = column_num)
+    }
+
+    column_sbs_df = column_sbs_df %>%
+      dplyr::left_join(
+        purrr::map2_dfr(
+          .x = column_sbs_df[['question_id']],
+          .y = column_sbs_df[['column_num']],
+          .f = get_column_choices
+        ),
+        by = c('question_id', 'column_num')
+      )
+
+    choice_df = dplyr::bind_rows(choice_df, column_sbs_df)
+
+    choice_df = tibble::tibble(
+      question_id = question_order
+    ) %>%
+      dplyr::inner_join(
+        choice_df,
+        by = 'question_id'
+      )
+
+  } else{
+
+    # Ensure that these columns exist even if there are no SBS
+    # questions for uniformity of output:
+    for(column in c(
+      'column_num',
+      'column_text',
+      'column_label',
+      'column_type',
+      'column_selector',
+      'column_subselector'
+    )
+    ){
+      choice_df[column] = NA_character_
+    }
+
+  }
+
+  choice_df
+
+}
 
 
 

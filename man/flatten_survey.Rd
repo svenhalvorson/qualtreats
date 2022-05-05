@@ -24,7 +24,8 @@ flatten_survey(
 a named list of the four tables generated
 }
 \description{
-Flatten a Qualtrics Survey
+Decompose the blocks, questions, and choices of a
+Qualtrics survey into rectangular data sets.
 }
 \author{
 Sven Halvorson (svenpubmail@gmail.com)
