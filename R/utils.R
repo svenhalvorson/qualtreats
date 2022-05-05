@@ -31,7 +31,7 @@ valid_out_dir = function(out_dir){
   is.null(out_dir) || dir.exists(out_dir)
 }
 
-# Subset if possible:
+#' Subset if possible
 #' @keywords internal
 #' @param l a named list
 #' @param name the name within \code{l} to try
