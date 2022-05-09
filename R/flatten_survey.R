@@ -202,7 +202,7 @@ flatten_questions = function(
   matrix_questions = purrr::keep(
     .x = questions,
     .p = function(x){
-      x[['questionType']][['type']] %in% c('Matrix', 'SBS')
+      x[['questionType']][['type']] %in% c('Matrix', 'SBS', 'DD')
     }
   )
 
@@ -305,7 +305,7 @@ flatten_choices = function(
   questions = purrr::keep(
     .x = survey[['questions']],
     .p = function(x){
-      x[['questionType']][['type']] %in% c('MC', 'Matrix') |
+      x[['questionType']][['type']] %in% c('MC', 'Matrix', 'DD') |
         x[['questionType']][['selector']] == 'FORM'}
   )
 
