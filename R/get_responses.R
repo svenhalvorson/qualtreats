@@ -128,7 +128,7 @@ get_responses = function(
   # Now read it in:
   read_fun = switch(
     file_format,
-    csv = readr::read_csv,
+    csv = function(x){readr::read_csv(x, show_col_types = FALSE)},
     tsv = function(x){read.delim2(file = x, fileEncoding = 'UTF-16')},
     spss = haven::read_sav
   )

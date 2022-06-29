@@ -3,3 +3,4 @@
 export("flatten_survey")
 export(get_responses)
 export(get_survey)
+importFrom(magrittr,"%>%")

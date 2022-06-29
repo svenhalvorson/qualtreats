@@ -8,6 +8,8 @@
 #' @return a named list of the four tables generated
 #' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
+#' TODO : make a version of subq_description that has no HTML
+
 
 flatten_survey = function(
   survey_id,
