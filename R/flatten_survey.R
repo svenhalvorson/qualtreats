@@ -109,7 +109,8 @@ flatten_blocks = function(
       .x = blocks,
       .f = subset_safely,
       name = 'description'
-    )
+    ) %>%
+      base::unname()
   )
 
 

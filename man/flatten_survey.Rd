@@ -29,4 +29,5 @@ Qualtrics survey into rectangular data sets.
 }
 \author{
 Sven Halvorson (svenpubmail@gmail.com)
+TODO : make a version of subq_description that has no HTML
 }
