@@ -8,7 +8,6 @@ get_responses(
   survey_id,
   out_dir = NULL,
   file_format = c("spss", "csv", "tsv"),
-  var_labs = TRUE,
   useLabels = FALSE
 )
 }
@@ -22,7 +21,7 @@ get_responses(
 \item{useLabels}{Should value labels be downloaded instead of recodes?}
 }
 \value{
-
+a \code{tibble} of the responses
 }
 \description{
 Get Qualtrics Responses

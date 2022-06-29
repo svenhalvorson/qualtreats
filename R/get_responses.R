@@ -3,7 +3,7 @@
 #' @param out_dir a string path to a directory for output
 #' @param file_format one of \code{c('spss', 'csv', 'tsv')}
 #' @param useLabels Should value labels be downloaded instead of recodes?
-#' @return
+#' @return a \code{tibble} of the responses
 #' @export
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 # TODO: allow the api key as a parameter, allow additional arguments to the payloadS
@@ -12,7 +12,6 @@ get_responses = function(
   survey_id,
   out_dir = NULL,
   file_format = c('spss', 'csv', 'tsv'),
-  var_labs = TRUE,
   useLabels = FALSE
 ){
 
@@ -129,7 +128,7 @@ get_responses = function(
   read_fun = switch(
     file_format,
     csv = function(x){readr::read_csv(x, show_col_types = FALSE)},
-    tsv = function(x){read.delim2(file = x, fileEncoding = 'UTF-16')},
+    tsv = function(x){utils::read.delim2(file = x, fileEncoding = 'UTF-16')},
     spss = haven::read_sav
   )
 
