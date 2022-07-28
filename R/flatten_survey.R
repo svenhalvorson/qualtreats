@@ -4,7 +4,7 @@
 #' @param survey_id string of the survey id, begins with 'SV_'
 #' @param out_dir path to directory where files can be written
 #' @param file_prefix string prefix to file names
-#' @param file_format one of \code{c('tsv', 'csv')}
+#' @param file_format one of \code{c('csv', 'tsv')}
 #' @return a named list of the four tables generated
 #' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
@@ -116,7 +116,7 @@ flatten_blocks = function(
 
   # Add a flag for loop and merge:
   if('loopAndMerge' %in% names(survey)){
-    block_df[['loop_and_merge']] = as.numeric(
+    block_df[['loop_and_merge']] = as.integer(
       block_df[['block_id']] %in% names(survey[['loopAndMerge']])
     )
   } else{
@@ -220,11 +220,11 @@ flatten_questions = function(
 
       tibble::tibble(
         'question_id' = question_id,
-        'subq_num'  = sub_question_num,
-        'subq_recode' = sub_question[['recode']],
+        'subq_number'  = as.integer(sub_question_num),
+        'subq_recode' = as.integer(sub_question[['recode']]),
         'subq_description' = sub_question[['description']],
         'subq_choice_text' = sub_question[['choiceText']],
-        'subq_text_entry' = as.numeric('textEntry' %in% names(sub_question))
+        'subq_text_entry' = as.integer('textEntry' %in% names(sub_question))
       )
 
     }
@@ -250,7 +250,7 @@ flatten_questions = function(
     'question_type',
     'selector',
     'sub_selector',
-    'subq_num',
+    'subq_number',
     'subq_recode',
     'subq_description',
     'subq_choice_text',
@@ -273,6 +273,7 @@ flatten_questions = function(
         string = question_text,
         pattern = '<[^>]*>'
       ),
+      # TODO: decide if this is a good idea or not:
       question_text_clean = stringr::str_replace_all(
         string = question_text_clean,
         pattern = '\\n|\\t',
@@ -324,12 +325,12 @@ flatten_choices = function(
 
     tibble::tibble(
       'question_id' = qid,
-      'choice' = choice_name,
+      'choice' = as.integer(choice_name),
       'choice_description' = subset_safely(choice_list, 'description'),
       'choice_text' = subset_safely(choice_list, 'choiceText'),
-      'choice_recode' = subset_safely(choice_list, 'recode'),
-      'text_entry' = 'textEntry' %in% names(choice_list),
-      'analyze' = subset_safely(choice_list, 'analyze')
+      'choice_recode' = as.integer(subset_safely(choice_list, 'recode')),
+      'text_entry' = as.integer('textEntry' %in% names(choice_list)),
+      'analyze' = as.integer(subset_safely(choice_list, 'analyze'))
     )
   }
 
@@ -366,7 +367,7 @@ flatten_choices = function(
 
     tibble::tibble(
       'question_id' = qid,
-      'column_num' = column_num,
+      'column_num' = as.integer(column_num),
       'column_text' = column[['questionText']],
       'column_label' = subset_safely(column, 'questionLabel'),
       'column_type' = question_type[['type']],
