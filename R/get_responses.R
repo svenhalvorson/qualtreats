@@ -10,9 +10,9 @@
 
 get_responses = function(
   survey_id,
-  out_dir = NULL,
   file_format = c('spss', 'csv', 'tsv'),
-  useLabels = FALSE
+  useLabels = FALSE,
+  out_dir = NULL
 ){
 
   # Argument checks:

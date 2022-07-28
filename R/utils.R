@@ -43,3 +43,14 @@ subset_safely = function(l, name){
   }
 }
 
+#' Pad to two digits
+#' @keywords internal
+#' @param string a string
+pad2 = function(string){
+  stringr::str_pad(
+    string = string,
+    width = 2,
+    side = 'left',
+    pad = '0'
+  )
+}
