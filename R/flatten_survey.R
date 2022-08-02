@@ -190,8 +190,8 @@ flatten_questions = function(
       'question_text' = subset_safely(question, 'questionText'),
       'question_label' = subset_safely(question, 'questionLabel'),
       'question_type' = subset_safely(question[['questionType']], 'type'),
-      'selector' = subset_safely(question[['questionType']], 'selector'),
-      'sub_selector' = subset_safely(question[['questionType']], 'subSelector')
+      'question_selector' = subset_safely(question[['questionType']], 'selector'),
+      'question_sub_selector' = subset_safely(question[['questionType']], 'subSelector')
     )
   }
 
@@ -240,22 +240,45 @@ flatten_questions = function(
     .f = get_subquestions
   )
 
-  # Set the column order of the output:
-  col_order = c(
-    'question_id',
-    'question_name',
-    'question_text',
-    'question_text_clean',
-    'question_label',
-    'question_type',
-    'selector',
-    'sub_selector',
-    'subq_number',
-    'subq_recode',
-    'subq_description',
-    'subq_choice_text',
-    'subq_text_entry'
+  # UPDATE: I think we're going to cross join on a table of the columns
+  # of each side-by-side question:
+  sbs_questions = purrr::keep(
+    .x = matrix_questions,
+    .p = function(x){
+      x[['questionType']][['type']] == 'SBS'
+    }
   )
+
+  if(length(sbs_questions) > 0){
+    get_sbs_columns = function(question_id){
+
+      sbs_question = sbs_questions[[question_id]]
+      sbs_columns = sbs_question[['columns']]
+      tibble::tibble(
+        question_id = question_id,
+        column_number = as.integer(names(sbs_columns)),
+        column_text = purrr::map_chr(sbs_columns, subset_safely, 'questionText'),
+        # TODO: add question label?
+        column_type = purrr::map_chr(sbs_columns, function(x){x[['questionType']][['type']]}),
+        column_selector = purrr::map_chr(sbs_columns, function(x){x[['questionType']][['selector']]}),
+        column_subselector = purrr::map_chr(sbs_columns, function(x){x[['questionType']][['subSelector']]})
+        #column_selector = sbs_question[['questionType']][['']]
+      )
+
+    }
+
+    column_df = purrr::map_dfr(
+      .x = names(sbs_questions),
+      .f = get_sbs_columns
+    )
+
+    subquestion_df = dplyr::left_join(
+      subquestion_df,
+      column_df,
+      by = 'question_id'
+    )
+
+  }
 
   # Sometimes there will be no matrix questions so:
   if(nrow(subquestion_df) > 0){
@@ -266,7 +289,30 @@ flatten_questions = function(
       )
   }
 
-  question_df = question_df %>%
+  # Set the column order of the output:
+  output_header = tibble::tribble(
+    ~question_id,
+    ~question_name,
+    ~question_text,
+    ~question_text_clean,
+    ~question_type,
+    ~question_selector,
+    ~question_sub_selecto,
+    ~question_label,
+    ~subq_number,
+    ~subq_recode,
+    ~subq_description,
+    ~subq_choice_text,
+    ~subq_text_entry,
+    ~column_number,
+    ~column_text,
+    ~column_type,
+    ~column_selector,
+    ~column_subselector
+  )
+
+  question_df = output_header %>%
+    dplyr::bind_rows(question_df) %>%
     # Strip away HTML nonsense
     dplyr::mutate(
       question_text_clean = stringr::str_remove_all(
@@ -279,9 +325,6 @@ flatten_questions = function(
         pattern = '\\n|\\t',
         replacement = ' '
       )
-    ) %>%
-    dplyr::select(
-      dplyr::any_of(col_order)
     )
 
   question_df
@@ -372,7 +415,7 @@ flatten_choices = function(
       'column_label' = subset_safely(column, 'questionLabel'),
       'column_type' = question_type[['type']],
       'column_selector' = subset_safely(question_type, 'selector'),
-      'column_subselector' = subset_safely(question_type, 'subSelector')
+      'column_sub_selector' = subset_safely(question_type, 'subSelector')
     )
   }
 
@@ -449,7 +492,7 @@ flatten_choices = function(
       'column_label',
       'column_type',
       'column_selector',
-      'column_subselector'
+      'column_sub_selector'
     )
     ){
       choice_df[column] = NA_character_
