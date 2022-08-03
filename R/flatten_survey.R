@@ -191,7 +191,7 @@ flatten_questions = function(
       'question_label' = subset_safely(question, 'questionLabel'),
       'question_type' = subset_safely(question[['questionType']], 'type'),
       'question_selector' = subset_safely(question[['questionType']], 'selector'),
-      'question_sub_selector' = subset_safely(question[['questionType']], 'subSelector')
+      'question_subselector' = subset_safely(question[['questionType']], 'subSelector')
     )
   }
 
@@ -293,12 +293,12 @@ flatten_questions = function(
   output_header = tibble::tribble(
     ~question_id,
     ~question_name,
+    ~question_label,
     ~question_text,
     ~question_text_clean,
     ~question_type,
     ~question_selector,
-    ~question_sub_selecto,
-    ~question_label,
+    ~question_subselector,
     ~subq_number,
     ~subq_recode,
     ~subq_description,
@@ -400,105 +400,75 @@ flatten_choices = function(
   )
 
 
-  # Now deal with the SBS questions. First need to extract all the columns used.
-  # This should actually mimic flatten_questions a bit since it's like
-  # we have multiple questions together
-
-  extract_column = function(qid, column, column_num){
-
-    question_type = column[['questionType']]
-
-    tibble::tibble(
-      'question_id' = qid,
-      'column_num' = as.integer(column_num),
-      'column_text' = column[['questionText']],
-      'column_label' = subset_safely(column, 'questionLabel'),
-      'column_type' = question_type[['type']],
-      'column_selector' = subset_safely(question_type, 'selector'),
-      'column_sub_selector' = subset_safely(question_type, 'subSelector')
-    )
-  }
-
-  # Frequently this won't be needed:
+  # Side-by-side questions just need a little more love. Gotta
+  # go within each column to get the choices here:
   if(length(questions_sbs) > 0){
 
-    get_columns = function(qid){
+    get_question_columns = function(question_id){
 
-      columns = questions_sbs[[qid]][['columns']]
-      column_names = names(columns)
-
-      purrr::pmap_dfr(
-        .l = list(
-          qid,
-          columns,
-          names(columns)
-        ),
-        .f = extract_column
+      tibble(
+        question_id = question_id,
+        column_number = as.integer(names(questions_sbs[[question_id]][['columns']]))
       )
-
 
     }
 
-    column_sbs_df = purrr::map_dfr(
+    column_df = purrr::map_dfr(
       .x = names(questions_sbs),
-      .f = get_columns
+      .f = get_question_columns
     )
 
-    # Then we have to go through all these columns,
-    # and run a version of extract_choice on them.
-    get_column_choices = function(qid, column_num){
+    extract_column_choices = function(question_id, column_number){
 
-      choices = questions_sbs[[qid]][['columns']][[column_num]][['choices']]
-
-      # For each choice, we make a row of a data frame here:
-      purrr::pmap_dfr(
-        .l = list(
-          qid,
-          choices,
-          names(choices)
-        ),
-        .f = extract_choice
-      ) %>%
-        dplyr::mutate(column_num = column_num)
-    }
-
-    column_sbs_df = column_sbs_df %>%
-      dplyr::left_join(
-        purrr::map2_dfr(
-          .x = column_sbs_df[['question_id']],
-          .y = column_sbs_df[['column_num']],
-          .f = get_column_choices
-        ),
-        by = c('question_id', 'column_num')
+      column_choices = questions_sbs[[question_id]][['columns']][[column_number]][['choices']]
+      #browser()
+      tibble::tibble(
+        question_id = question_id,
+        column_number = as.integer(column_number),
+        choice = as.integer(names(column_choices)),
+        choice_recode = as.integer(map_chr(.x = column_choices, .f = subset_safely, 'recode')),
+        choice_description = map_chr(.x = column_choices, .f = subset_safely, 'description'),
+        choice_text = map_chr(.x = column_choices, .f = subset_safely, 'choiceText'),
+        analyze = map_int(.x = column_choices, .f = subset_safely, 'analyze')
       )
 
-    choice_df = dplyr::bind_rows(choice_df, column_sbs_df)
 
-    choice_df = tibble::tibble(
-      question_id = question_order
+    }
+
+    choice_df = map2_dfr(
+      .x = column_df[['question_id']],
+      .y = column_df[['column_number']],
+      .f = extract_column_choices
     ) %>%
-      dplyr::inner_join(
-        choice_df,
-        by = 'question_id'
-      )
+      dplyr::bind_rows(choice_df)
 
-  } else{
-
-    # Ensure that these columns exist even if there are no SBS
-    # questions for uniformity of output:
-    for(column in c(
-      'column_num',
-      'column_text',
-      'column_label',
-      'column_type',
-      'column_selector',
-      'column_sub_selector'
-    )
-    ){
-      choice_df[column] = NA_character_
-    }
 
   }
+
+  choice_df = choice_df %>%
+    dplyr::mutate(
+      question_id = factor(
+        x = question_id,
+        levels = question_order
+      )
+    ) %>%
+    dplyr::arrange(question_id) %>%
+    dplyr::mutate(
+      question_id = as.character(question_id)
+    )
+
+  # Make sure always the same columns get returned:
+  choice_df = tibble::tribble(
+    ~question_id,
+    ~column_number,
+    ~choice,
+    ~choice_recode,
+    ~choice_description,
+    ~choice_text,
+    ~text_entry,
+    ~analyze
+  ) %>%
+    dplyr::bind_rows(choice_df)
 
   choice_df
 
