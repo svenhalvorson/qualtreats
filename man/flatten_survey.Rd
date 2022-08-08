@@ -18,7 +18,7 @@ flatten_survey(
 
 \item{file_prefix}{string prefix to file names}
 
-\item{file_format}{one of \code{c('tsv', 'csv')}}
+\item{file_format}{one of \code{c('csv', 'tsv')}}
 }
 \value{
 a named list of the four tables generated

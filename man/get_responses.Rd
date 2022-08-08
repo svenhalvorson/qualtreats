@@ -6,19 +6,19 @@
 \usage{
 get_responses(
   survey_id,
-  out_dir = NULL,
   file_format = c("spss", "csv", "tsv"),
-  useLabels = FALSE
+  useLabels = FALSE,
+  out_dir = NULL
 )
 }
 \arguments{
 \item{survey_id}{string}
 
-\item{out_dir}{a string path to a directory for output}
-
 \item{file_format}{one of \code{c('spss', 'csv', 'tsv')}}
 
 \item{useLabels}{Should value labels be downloaded instead of recodes?}
+
+\item{out_dir}{a string path to a directory for output}
 }
 \value{
 a \code{tibble} of the responses
