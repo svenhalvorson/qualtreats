@@ -29,15 +29,36 @@ simplify_qtypes = function(survey_id){
     )
   )
 
-  flatten_survey(survey_id) %>%
+  simplified_qtypes = flatten_survey(survey_id) %>%
     purrr::pluck('questions') %>%
-    dplyr::left_join(qtype_cross) %>%
+    dplyr::left_join(
+      qtype_cross,
+      by = c(
+        "question_type",
+        "question_selector",
+        "question_subselector",
+        "column_type",
+        "column_selector",
+        "column_subselector"
+      )
+    ) %>%
     # note we're taking distinct here since the column numbers will be
     # repeated for each subquestion. Want to be able to smothly join onto
     # the flattened questions if that's desired.
     dplyr::distinct(question_id, column_number, question_style, question_matrix)
 
+  if(
+    any(
+      c(
+        is.na(simplified_qtypes[['question_style']]),
+        is.na(simplified_qtypes[['question_matrix']])
+      )
+    )
+  ){
+    warning('Some questions have no associated question_style/matrix. DEV FIX THIS!')
+  }
 
+  simplified_qtypes
 
 }
 
