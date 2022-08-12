@@ -1,9 +1,11 @@
 #' Get Qualtrics Responses
 #' @param survey_id string
-#' @param out_dir a string path to a directory for output
 #' @param file_format one of \code{c('spss', 'csv', 'tsv')}
 #' @param useLabels Should value labels be downloaded instead of recodes?
+#' @param out_dir a string path to a directory for output
+#' @param variable_labels Should variable labels (from \code{expss}) be applied/retained?
 #' @return a \code{tibble} of the responses
+#' @details Note that value labels are returned when \code{file_format = 'spss'} only.
 #' @export
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 # TODO: allow the api key as a parameter, allow additional arguments to the payloadS
@@ -12,7 +14,8 @@ get_responses = function(
   survey_id,
   file_format = c('spss', 'csv', 'tsv'),
   useLabels = FALSE,
-  out_dir = NULL
+  out_dir = NULL,
+  variable_labels = TRUE
 ){
 
   # Argument checks:
@@ -134,6 +137,7 @@ get_responses = function(
 
   responses = read_fun(responses_file)
 
+  # Apply variable labels in the case of non-spss formmat
   if(file_format != 'spss'){
 
     # apply value labels
@@ -144,6 +148,14 @@ get_responses = function(
     responses = dplyr::slice(responses, 3:dplyr::n())
 
   }
+
+  # Delete var labs if not requested:
+  if(!variable_labels){
+    responses = expss::drop_var_labs(responses)
+  }
+  # Note that this is a bit weird looking but we have to accomodate the case
+  # of file_format == 'spss' & variable_labels == FALSE which is unlikely
+  # but I suppose someone might want that.
 
   invisible(responses)
 
