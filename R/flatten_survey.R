@@ -406,7 +406,7 @@ flatten_choices = function(
 
     get_question_columns = function(question_id){
 
-      tibble(
+      tibble::tibble(
         question_id = question_id,
         column_number = as.integer(names(questions_sbs[[question_id]][['columns']]))
       )
@@ -426,16 +426,16 @@ flatten_choices = function(
         question_id = question_id,
         column_number = as.integer(column_number),
         choice = as.integer(names(column_choices)),
-        choice_recode = as.integer(map_chr(.x = column_choices, .f = subset_safely, 'recode')),
-        choice_description = map_chr(.x = column_choices, .f = subset_safely, 'description'),
-        choice_text = map_chr(.x = column_choices, .f = subset_safely, 'choiceText'),
-        analyze = map_int(.x = column_choices, .f = subset_safely, 'analyze')
+        choice_recode = as.integer(purrr::map_chr(.x = column_choices, .f = subset_safely, 'recode')),
+        choice_description = purrr::map_chr(.x = column_choices, .f = subset_safely, 'description'),
+        choice_text = purrr::map_chr(.x = column_choices, .f = subset_safely, 'choiceText'),
+        analyze = purrr::map_int(.x = column_choices, .f = subset_safely, 'analyze')
       )
 
 
     }
 
-    choice_df = map2_dfr(
+    choice_df = purrr::map2_dfr(
       .x = column_df[['question_id']],
       .y = column_df[['column_number']],
       .f = extract_column_choices
