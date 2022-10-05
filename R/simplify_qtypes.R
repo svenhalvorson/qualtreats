@@ -63,14 +63,14 @@ simplify_qtypes = function(survey_id){
 }
 
 # TODO: delete this eventually when we're satisfied with the mapping:
-update_qtype_cross = function(){
-
-  qtype_cross = readr::read_csv(
-    here::here('data/qtype_cross.csv')
-  )
-
-  usethis::use_data(qtype_cross, internal = TRUE)
-
-  invisible(NULL)
-
-}
+# update_qtype_cross = function(){
+#
+#   qtype_cross = readr::read_csv(
+#     here::here('in_progress/in_progress_data/qtype_cross.csv')
+#   )
+#
+#   usethis::use_data(qtype_cross, internal = TRUE)
+#
+#   invisible(NULL)
+#
+# }
