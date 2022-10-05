@@ -4,6 +4,7 @@
 #' @param useLabels Should value labels be downloaded instead of recodes?
 #' @param out_dir a string path to a directory for output
 #' @param variable_labels Should variable labels (from \code{expss}) be applied/retained?
+#' @param exportResponsesInProgress Should incomplete responses be exported instead?
 #' @return a \code{tibble} of the responses
 #' @details Note that value labels are returned when \code{file_format = 'spss'} only.
 #' @export
@@ -15,7 +16,8 @@ get_responses = function(
   file_format = c('spss', 'csv', 'tsv'),
   useLabels = FALSE,
   out_dir = NULL,
-  variable_labels = TRUE
+  variable_labels = TRUE,
+  exportResponsesInProgress = FALSE
 ){
 
   # Argument checks:
@@ -48,7 +50,8 @@ get_responses = function(
       'useLabels' = useLabels,
       'format'  = file_format,
       'includeLabelColumns' = FALSE,
-      'timeZone' = 'America/Los_Angeles'
+      'timeZone' = 'America/Los_Angeles',
+      'exportResponsesInProgress' = exportResponsesInProgress
     ) %>%
     purrr::map(
       function(x){if(length(x) == 1) jsonlite::unbox(x) else x}
@@ -145,7 +148,15 @@ get_responses = function(
       expss::var_lab(responses[[i]]) = responses[1,i]
     }
 
-    responses = dplyr::slice(responses, 3:dplyr::n())
+    # Slice off top, if there are no actual responses then
+    # return it differently:
+    if(nrow(responses) >= 3){
+       response_rownums = 3:nrow(responses)
+     } else{
+       response_rownums = 0
+     }
+
+    responses = dplyr::slice(responses, response_rownums)
 
   }
 

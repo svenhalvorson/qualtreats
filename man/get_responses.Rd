@@ -8,7 +8,9 @@ get_responses(
   survey_id,
   file_format = c("spss", "csv", "tsv"),
   useLabels = FALSE,
-  out_dir = NULL
+  out_dir = NULL,
+  variable_labels = TRUE,
+  exportResponsesInProgress = FALSE
 )
 }
 \arguments{
@@ -19,12 +21,19 @@ get_responses(
 \item{useLabels}{Should value labels be downloaded instead of recodes?}
 
 \item{out_dir}{a string path to a directory for output}
+
+\item{variable_labels}{Should variable labels (from \code{expss}) be applied/retained?}
+
+\item{exportResponsesInProgress}{Should incomplete responses be exported instead?}
 }
 \value{
 a \code{tibble} of the responses
 }
 \description{
 Get Qualtrics Responses
+}
+\details{
+Note that value labels are returned when \code{file_format = 'spss'} only.
 }
 \author{
 Sven Halvorson (svenpubmail@gmail.com)
