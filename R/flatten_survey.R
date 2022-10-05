@@ -5,11 +5,10 @@
 #' @param out_dir path to directory where files can be written
 #' @param file_prefix string prefix to file names
 #' @param file_format one of \code{c('csv', 'tsv')}
-#' @return a named list of the four tables generated
+#' @return a named list of the three tables generated
 #' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 #' TODO : make a version of subq_description that has no HTML
-
 
 flatten_survey = function(
   survey_id,
@@ -39,14 +38,12 @@ flatten_survey = function(
   # Construct the file paths for the output
   tables = c(
     'blocks',
-    'block_question',
     'questions',
     'choices'
   )
 
   results = list(
     flatten_blocks(survey),
-    flatten_question_block(survey),
     flatten_questions(survey),
     flatten_choices(survey)
   )
@@ -67,7 +64,6 @@ flatten_survey = function(
       out_dir = paste0(out_dir, '/')
     }
 
-
     file_names = paste0(
       file_prefix,
       ifelse(
@@ -79,7 +75,6 @@ flatten_survey = function(
       '.',
       file_format
     )
-
 
     file_paths = paste0(out_dir, file_names)
 
@@ -289,9 +284,15 @@ flatten_questions = function(
       )
   }
 
+  # UPDATE 2022-10-05: moving the block ID to be within the questions
+  # data frame instead of its own since we always do the same join:
+  question_block = flatten_question_block(survey)
+  question_df = dplyr::left_join(question_df, question_block, by = 'question_id')
+
   # Set the column order of the output:
   output_header = tibble::tribble(
     ~question_id,
+    ~block_id,
     ~question_name,
     ~question_label,
     ~question_text,

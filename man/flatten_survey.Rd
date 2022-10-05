@@ -21,7 +21,7 @@ flatten_survey(
 \item{file_format}{one of \code{c('csv', 'tsv')}}
 }
 \value{
-a named list of the four tables generated
+a named list of the three tables generated
 }
 \description{
 Decompose the blocks, questions, and choices of a
