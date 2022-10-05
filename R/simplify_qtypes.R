@@ -6,7 +6,9 @@
 #'   \item \code{question_id}
 #'   \item \code{column_number} for side-by-side questions
 #'   \item \code{question_style} as one of \code{c('radio', 'checkbox', 'text', 'signature', 'descriptive')}
-#'   \item \code{question_matrix} indicating whether the question is a matrix/side-by-side
+#'   \item \code{question_matrix} indicating whether the question is a matrix. Note that all
+#'   side-by-side questions are considered matrices even if they have only one column.
+#'   \item \code{question_sbs} indicating whether the question is a side-by-side
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
 #' @return a \code{tibble}
@@ -45,17 +47,20 @@ simplify_qtypes = function(survey_id){
     # note we're taking distinct here since the column numbers will be
     # repeated for each subquestion. Want to be able to smothly join onto
     # the flattened questions if that's desired.
-    dplyr::distinct(question_id, column_number, question_style, question_matrix)
+    dplyr::distinct(question_id, column_number, question_style, question_matrix, question_sbs)
 
   if(
     any(
-      c(
-        is.na(simplified_qtypes[['question_style']]),
-        is.na(simplified_qtypes[['question_matrix']])
+      is.na(
+        c(
+          simplified_qtypes[['question_style']],
+          simplified_qtypes[['question_matrix']],
+          simplified_qtypes[['question_sbs']]
+        )
       )
     )
   ){
-    warning('Some questions have no associated question_style/matrix. DEV FIX THIS!')
+    warning('Some questions have no associated question_style/matrix/sbs. DEV FIX THIS!')
   }
 
   simplified_qtypes
@@ -69,7 +74,7 @@ simplify_qtypes = function(survey_id){
 #     here::here('in_progress/in_progress_data/qtype_cross.csv')
 #   )
 #
-#   usethis::use_data(qtype_cross, internal = TRUE)
+#   usethis::use_data(qtype_cross, internal = TRUE, overwrite = TRUE)
 #
 #   invisible(NULL)
 #

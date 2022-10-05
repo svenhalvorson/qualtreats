@@ -20,6 +20,8 @@ that lists:
   \item \code{question_id}
   \item \code{column_number} for side-by-side questions
   \item \code{question_style} as one of \code{c('radio', 'checkbox', 'text', 'signature', 'descriptive')}
-  \item \code{question_matrix} indicating whether the question is a matrix/side-by-side
+  \item \code{question_matrix} indicating whether the question is a matrix. Note that all
+  side-by-side questions are considered matrices even if they have only one column.
+  \item \code{question_sbs} indicating whether the question is a side-by-side
 }
 }
