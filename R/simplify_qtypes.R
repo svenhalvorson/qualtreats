@@ -11,27 +11,44 @@
 #'   \item \code{question_sbs} indicating whether the question is a side-by-side
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
+#' @param flattened_survey the result of \code{qualtreats::flatten_survey}
+#' @note Only one of \code{survey_id} or \code{flattened_survey} is necessary.
+#' Providing a flattened survey is offered just to save computational time.
 #' @return a \code{tibble}
 #' @export "simplify_qtypes"
 
-simplify_qtypes = function(survey_id){
+simplify_qtypes = function(survey_id, flattened_survey){
 
   # objective is to return a data frame with these columns:
   # question_id
   # column_number
   # question_style: c('radio', 'checkbox', 'text', 'signature', 'descriptive')
   # question_matrix: binary, is the question a matrix?
+  # question_sbs: binary, is the question a side-by-side?
+
+  if(!missing(flattened_survey)){
+    stopifnot(
+      all(
+        !identical(names(flattened_survey), c("blocks", "questions", "choices")),
+        purrr::map_chr(flattened_survey, is.data.frame)
+      )
+    )
+  }
 
   # argument check:
   stopifnot(
     all(
-      valid_survey_id(survey_id),
+      valid_survey_id(survey_id) | !missing(flattened_survey),
       valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
       valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
     )
   )
 
-  simplified_qtypes = flatten_survey(survey_id) %>%
+  if(missing(flattened_survey)){
+    flattened_survey = flatten_survey(survey_id)
+  }
+
+  simplified_qtypes = flattened_survey %>%
     purrr::pluck('questions') %>%
     dplyr::left_join(
       qtype_cross,
