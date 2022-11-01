@@ -34,18 +34,25 @@ valid_out_dir = function(out_dir){
 #' Subset if possible
 #' @keywords internal
 #' @param l a named list
-#' @param name the name within \code{l} to try
-subset_safely = function(l, name){
-  if(name %in% names(l)){
-    l[[name]]
-  } else{
-    NA
+#' @param ... other strings used for name accessors
+subset_safely = function(l, ...){
+  nests = list(...)
+  for(nest in nests){
+    if(nest %in% names(l)){
+      l = l[[nest]]
+    } else{
+      return(NA)
+    }
   }
+
+  return(l)
 }
 
 #' Pad to two digits
-#' @keywords internal
 #' @param string a string
+#' @export
+#' @description Pad strings to two digits
+#' @details convenience wrapper for \code{stringr::str_pad}
 pad2 = function(string){
   stringr::str_pad(
     string = string,
