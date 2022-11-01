@@ -218,7 +218,7 @@ flatten_questions = function(
         'subq_number'  = as.integer(sub_question_num),
         'subq_recode' = as.integer(sub_question[['recode']]),
         'subq_description' = sub_question[['description']],
-        'subq_choice_text' = sub_question[['choiceText']],
+        'subq_text' = sub_question[['choiceText']],
         'subq_text_entry' = as.integer('textEntry' %in% names(sub_question))
       )
 
@@ -289,9 +289,20 @@ flatten_questions = function(
   question_block = flatten_question_block(survey)
   question_df = dplyr::left_join(question_df, question_block, by = 'question_id')
 
+  # Also going to add the export tags on here:
+  survey_def_questions = get_survey(survey$id, type = 'definitions')[['Questions']]
+  export_tags = tibble::tibble(
+    question_id = purrr::map_chr(survey_def_questions, subset_safely, 'QuestionID'),
+    export_tag = purrr::map_chr(survey_def_questions, subset_safely, 'DataExportTag')
+  )
+
+  question_df = dplyr::left_join(question_df, export_tags, by = 'question_id')
+
+
   # Set the column order of the output:
   output_header = tibble::tribble(
     ~question_id,
+    ~export_tag,
     ~block_id,
     ~question_name,
     ~question_label,
@@ -303,7 +314,7 @@ flatten_questions = function(
     ~subq_number,
     ~subq_recode,
     ~subq_description,
-    ~subq_choice_text,
+    ~subq_text,
     ~subq_text_entry,
     ~column_number,
     ~column_text,
@@ -422,7 +433,7 @@ flatten_choices = function(
     extract_column_choices = function(question_id, column_number){
 
       column_choices = questions_sbs[[question_id]][['columns']][[column_number]][['choices']]
-      #browser()
+
       tibble::tibble(
         question_id = question_id,
         column_number = as.integer(column_number),
