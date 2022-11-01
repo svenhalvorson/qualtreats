@@ -1,8 +1,9 @@
 #' Get Qualtrics Responses
 #' @param survey_id string
 #' @param file_format one of \code{c('spss', 'csv', 'tsv')}
-#' @param useLabels Should value labels be downloaded instead of recodes?
 #' @param out_dir a string path to a directory for output
+#' @param trim_rows should the first two rows (metadata) be discarded? Does not apply when \code{file_format = 'spss'}
+#' @param useLabels Should value labels be downloaded instead of recodes?
 #' @param variable_labels Should variable labels (from \code{expss}) be applied/retained?
 #' @param exportResponsesInProgress Should incomplete responses be exported instead?
 #' @return a \code{tibble} of the responses
@@ -14,8 +15,9 @@
 get_responses = function(
   survey_id,
   file_format = c('spss', 'csv', 'tsv'),
-  useLabels = FALSE,
   out_dir = NULL,
+  trim_rows = TRUE,
+  useLabels = FALSE,
   variable_labels = TRUE,
   exportResponsesInProgress = FALSE
 ){
@@ -150,12 +152,13 @@ get_responses = function(
 
     # Slice off top, if there are no actual responses then
     # return it differently:
-    if(nrow(responses) >= 3){
-       response_rownums = 3:nrow(responses)
-     } else{
-       response_rownums = 0
-     }
-
+    if(trim_rows){
+      if(nrow(responses) >= 3){
+        response_rownums = 3:nrow(responses)
+      } else{
+        response_rownums = 0
+      }
+    }
     responses = dplyr::slice(responses, response_rownums)
 
   }
