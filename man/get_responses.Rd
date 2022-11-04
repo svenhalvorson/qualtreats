@@ -7,10 +7,12 @@
 get_responses(
   survey_id,
   file_format = c("spss", "csv", "tsv"),
-  useLabels = FALSE,
   out_dir = NULL,
+  trim_rows = TRUE,
+  useLabels = FALSE,
   variable_labels = TRUE,
-  exportResponsesInProgress = FALSE
+  exportResponsesInProgress = FALSE,
+  limit = NULL
 )
 }
 \arguments{
@@ -18,13 +20,17 @@ get_responses(
 
 \item{file_format}{one of \code{c('spss', 'csv', 'tsv')}}
 
-\item{useLabels}{Should value labels be downloaded instead of recodes?}
-
 \item{out_dir}{a string path to a directory for output}
+
+\item{trim_rows}{should the first two rows (metadata) be discarded? Does not apply when \code{file_format = 'spss'}}
+
+\item{useLabels}{Should value labels be downloaded instead of recodes?}
 
 \item{variable_labels}{Should variable labels (from \code{expss}) be applied/retained?}
 
 \item{exportResponsesInProgress}{Should incomplete responses be exported instead?}
+
+\item{limit}{Maximum number of responses to export.}
 }
 \value{
 a \code{tibble} of the responses

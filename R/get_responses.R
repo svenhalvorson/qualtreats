@@ -6,6 +6,7 @@
 #' @param useLabels Should value labels be downloaded instead of recodes?
 #' @param variable_labels Should variable labels (from \code{expss}) be applied/retained?
 #' @param exportResponsesInProgress Should incomplete responses be exported instead?
+#' @param limit Maximum number of responses to export.
 #' @return a \code{tibble} of the responses
 #' @details Note that value labels are returned when \code{file_format = 'spss'} only.
 #' @export
@@ -19,7 +20,8 @@ get_responses = function(
   trim_rows = TRUE,
   useLabels = FALSE,
   variable_labels = TRUE,
-  exportResponsesInProgress = FALSE
+  exportResponsesInProgress = FALSE,
+  limit = NULL
 ){
 
   # Argument checks:
@@ -54,7 +56,11 @@ get_responses = function(
       'includeLabelColumns' = FALSE,
       'timeZone' = 'America/Los_Angeles',
       'exportResponsesInProgress' = exportResponsesInProgress
-    ) %>%
+    )
+  if(!is.null(limit)){
+    payload[['limit']] = limit
+  }
+  payload = payload %>%
     purrr::map(
       function(x){if(length(x) == 1) jsonlite::unbox(x) else x}
     ) %>%
@@ -147,7 +153,7 @@ get_responses = function(
 
     # apply value labels
     for(i in seq_along(responses)){
-      expss::var_lab(responses[[i]]) = responses[1,i]
+      responses[[i]] = haven::labelled(responses[[i]], label = responses[1,i, drop = TRUE])
     }
 
     # Slice off top, if there are no actual responses then
@@ -158,8 +164,8 @@ get_responses = function(
       } else{
         response_rownums = 0
       }
+      responses = dplyr::slice(responses, response_rownums)
     }
-    responses = dplyr::slice(responses, response_rownums)
 
   }
 
