@@ -4,10 +4,12 @@
 \alias{simplify_qtypes}
 \title{Simplify Question Types}
 \usage{
-simplify_qtypes(survey_id)
+simplify_qtypes(survey_id, flattened_survey)
 }
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
+
+\item{flattened_survey}{the result of \code{qualtreats::flatten_survey}}
 }
 \value{
 a \code{tibble}
@@ -23,5 +25,11 @@ that lists:
   \item \code{question_matrix} indicating whether the question is a matrix. Note that all
   side-by-side questions are considered matrices even if they have only one column.
   \item \code{question_sbs} indicating whether the question is a side-by-side
+  \item \code{question_loop} marks whether the question is in a block that
+  has the "loop and merge" feature enabled.
 }
+}
+\note{
+Only one of \code{survey_id} or \code{flattened_survey} is necessary.
+Providing a flattened survey is offered just to save computational time.
 }

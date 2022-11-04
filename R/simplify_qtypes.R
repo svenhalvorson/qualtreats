@@ -9,6 +9,8 @@
 #'   \item \code{question_matrix} indicating whether the question is a matrix. Note that all
 #'   side-by-side questions are considered matrices even if they have only one column.
 #'   \item \code{question_sbs} indicating whether the question is a side-by-side
+#'   \item \code{question_loop} marks whether the question is in a block that
+#'   has the "loop and merge" feature enabled.
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
 #' @param flattened_survey the result of \code{qualtreats::flatten_survey}
@@ -26,23 +28,25 @@ simplify_qtypes = function(survey_id, flattened_survey){
   # question_matrix: binary, is the question a matrix?
   # question_sbs: binary, is the question a side-by-side?
 
+  # argument check:
   if(!missing(flattened_survey)){
     stopifnot(
       all(
-        !identical(names(flattened_survey), c("blocks", "questions", "choices")),
-        purrr::map_chr(flattened_survey, is.data.frame)
+        identical(names(flattened_survey), c("blocks", "questions", "choices")),
+        purrr::map_lgl(flattened_survey, is.data.frame)
       )
     )
   }
 
-  # argument check:
-  stopifnot(
-    all(
-      valid_survey_id(survey_id) | !missing(flattened_survey),
-      valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
-      valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
+  if(!missing(survey_id)){
+    stopifnot(
+      all(
+        valid_survey_id(survey_id),
+        valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
+        valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
+      )
     )
-  )
+  }
 
   if(missing(flattened_survey)){
     flattened_survey = flatten_survey(survey_id)
@@ -65,6 +69,25 @@ simplify_qtypes = function(survey_id, flattened_survey){
     # repeated for each subquestion. Want to be able to smothly join onto
     # the flattened questions if that's desired.
     dplyr::distinct(question_id, column_number, question_style, question_matrix, question_sbs)
+
+  # Join loop and merge from the blocks table:
+  looped_question_ids = flattened_survey[['questions']] %>%
+    dplyr::distinct(question_id, block_id) %>%
+    dplyr::left_join(
+      y = flattened_survey[['blocks']],
+      by = 'block_id'
+    ) %>%
+    dplyr::transmute(
+      question_id,
+      question_loop = loop_and_merge
+    )
+
+
+  simplified_qtypes = dplyr::left_join(
+      x = simplified_qtypes,
+      y = looped_question_ids,
+      by = 'question_id'
+    )
 
   if(
     any(

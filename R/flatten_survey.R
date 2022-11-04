@@ -466,7 +466,7 @@ flatten_choices = function(
 
       }
 
-      choice_df = pmap_dfr(
+      choice_df = purrr::pmap_dfr(
         .l = list(
           question_id = question[['QuestionID']],
           column_number = as.integer(names(question[['AdditionalQuestions']])),

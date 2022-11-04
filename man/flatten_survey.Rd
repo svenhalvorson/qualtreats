@@ -8,7 +8,8 @@ flatten_survey(
   survey_id,
   out_dir = NULL,
   file_prefix = "",
-  file_format = c("csv", "tsv")
+  file_format = c("csv", "tsv"),
+  drop_trash = TRUE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ flatten_survey(
 \item{file_prefix}{string prefix to file names}
 
 \item{file_format}{one of \code{c('csv', 'tsv')}}
+
+\item{drop_trash}{Should questions in the trash bin be discarded?}
 }
 \value{
 a named list of the three tables generated
@@ -29,5 +32,4 @@ Qualtrics survey into rectangular data sets.
 }
 \author{
 Sven Halvorson (svenpubmail@gmail.com)
-TODO : make a version of subq_description that has no HTML
 }
