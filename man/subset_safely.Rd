@@ -4,12 +4,12 @@
 \alias{subset_safely}
 \title{Subset if possible}
 \usage{
-subset_safely(l, name)
+subset_safely(l, ...)
 }
 \arguments{
 \item{l}{a named list}
 
-\item{name}{the name within \code{l} to try}
+\item{...}{other strings used for name accessors}
 }
 \description{
 Subset if possible

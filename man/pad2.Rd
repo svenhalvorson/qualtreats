@@ -10,6 +10,8 @@ pad2(string)
 \item{string}{a string}
 }
 \description{
-Pad to two digits
+Pad strings to two digits
 }
-\keyword{internal}
+\details{
+convenience wrapper for \code{stringr::str_pad}
+}

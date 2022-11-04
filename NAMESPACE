@@ -2,6 +2,8 @@
 
 export("flatten_survey")
 export("simplify_qtypes")
+export(get_column_map)
 export(get_responses)
 export(get_survey)
+export(pad2)
 importFrom(magrittr,"%>%")
