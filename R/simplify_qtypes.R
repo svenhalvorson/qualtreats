@@ -3,13 +3,13 @@
 #' survey. This takes the results of \code{flatten_survey} and builds a table
 #' that lists:
 #' \itemize{
-#'   \item \code{question_id}
-#'   \item \code{column_number} for side-by-side questions
-#'   \item \code{question_style} as one of \code{c('radio', 'checkbox', 'text', 'signature', 'descriptive')}
-#'   \item \code{question_matrix} indicating whether the question is a matrix. Note that all
+#'   \item \code{question_id}: internal Qualtrics question id
+#'   \item \code{column_number}: for side-by-side questions
+#'   \item \code{question_style}: as one of \code{c('radio', 'checkbox', 'text', 'signature', 'descriptive')}
+#'   \item \code{question_matrix}: indicating whether the question is a matrix. Note that all
 #'   side-by-side questions are considered matrices even if they have only one column.
-#'   \item \code{question_sbs} indicating whether the question is a side-by-side
-#'   \item \code{question_loop} marks whether the question is in a block that
+#'   \item \code{question_sbs}: indicating whether the question is a side-by-side
+#'   \item \code{question_loop}: marks whether the question is in a block that
 #'   has the "loop and merge" feature enabled.
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
