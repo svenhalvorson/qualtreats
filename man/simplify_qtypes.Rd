@@ -4,12 +4,12 @@
 \alias{simplify_qtypes}
 \title{Simplify Question Types}
 \usage{
-simplify_qtypes(survey_id, flattened_survey)
+simplify_qtypes(survey_id, survey_flat)
 }
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
 
-\item{flattened_survey}{the result of \code{qualtreats::flatten_survey}}
+\item{survey_flat}{the result of \code{qualtreats::flatten_survey}}
 }
 \value{
 a \code{tibble}
@@ -30,6 +30,6 @@ that lists:
 }
 }
 \note{
-Only one of \code{survey_id} or \code{flattened_survey} is necessary.
+Only one of \code{survey_id} or \code{survey_flat} is necessary.
 Providing a flattened survey is offered just to save computational time.
 }

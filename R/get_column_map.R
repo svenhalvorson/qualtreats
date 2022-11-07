@@ -48,8 +48,8 @@ get_column_map = function(
   file_format = rlang::arg_match(file_format)
 
   # Flatten the survey, get the simplified question types:
-  flattened_survey = qualtreats::flatten_survey(survey_id)
-  qtypes = qualtreats::simplify_qtypes(flattened_survey = flattened_survey)
+  survey_flat = qualtreats::flatten_survey(survey_id)
+  qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
 
 
   # Get exported columns ----------------------------------------------------
@@ -251,7 +251,7 @@ get_column_map = function(
   column_map = column_map %>%
     dplyr::left_join(
       dplyr::transmute(
-        flattened_survey[['choices']],
+        survey_flat[['choices']],
         question_id,
         column_number,
         choice,
@@ -263,7 +263,7 @@ get_column_map = function(
   column_map = column_map %>%
     dplyr::left_join(
       dplyr::transmute(
-        flattened_survey[['choices']],
+        survey_flat[['choices']],
         question_id,
         column_number,
         choice2 = choice,
@@ -368,10 +368,10 @@ get_column_map = function(
   # Question names -------------------------------------------------------------
 
   # Now we're on to styling up our custom names:
-  question_names = flattened_survey[['blocks']] %>%
+  question_names = survey_flat[['blocks']] %>%
     dplyr::select(block_description, block_id) %>%
     dplyr::left_join(
-      y = dplyr::select(flattened_survey[['questions']], question_id, block_id),
+      y = dplyr::select(survey_flat[['questions']], question_id, block_id),
       by = 'block_id'
     ) %>%
     # repeats on column_number and subq_number mean we wanna grind this down:

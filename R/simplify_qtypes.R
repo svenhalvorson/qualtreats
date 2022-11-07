@@ -13,13 +13,13 @@
 #'   has the "loop and merge" feature enabled.
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
-#' @param flattened_survey the result of \code{qualtreats::flatten_survey}
-#' @note Only one of \code{survey_id} or \code{flattened_survey} is necessary.
+#' @param survey_flat the result of \code{qualtreats::flatten_survey}
+#' @note Only one of \code{survey_id} or \code{survey_flat} is necessary.
 #' Providing a flattened survey is offered just to save computational time.
 #' @return a \code{tibble}
 #' @export "simplify_qtypes"
 
-simplify_qtypes = function(survey_id, flattened_survey){
+simplify_qtypes = function(survey_id, survey_flat){
 
   # objective is to return a data frame with these columns:
   # question_id
@@ -29,11 +29,11 @@ simplify_qtypes = function(survey_id, flattened_survey){
   # question_sbs: binary, is the question a side-by-side?
 
   # argument check:
-  if(!missing(flattened_survey)){
+  if(!missing(survey_flat)){
     stopifnot(
       all(
-        identical(names(flattened_survey), c("blocks", "questions", "choices")),
-        purrr::map_lgl(flattened_survey, is.data.frame)
+        identical(names(survey_flat), c("blocks", "questions", "choices")),
+        purrr::map_lgl(survey_flat, is.data.frame)
       )
     )
   }
@@ -48,11 +48,11 @@ simplify_qtypes = function(survey_id, flattened_survey){
     )
   }
 
-  if(missing(flattened_survey)){
-    flattened_survey = flatten_survey(survey_id)
+  if(missing(survey_flat)){
+    survey_flat = flatten_survey(survey_id)
   }
 
-  simplified_qtypes = flattened_survey %>%
+  simplified_qtypes = survey_flat %>%
     purrr::pluck('questions') %>%
     dplyr::left_join(
       qtype_cross,
@@ -71,10 +71,10 @@ simplify_qtypes = function(survey_id, flattened_survey){
     dplyr::distinct(question_id, column_number, question_style, question_matrix, question_sbs)
 
   # Join loop and merge from the blocks table:
-  looped_question_ids = flattened_survey[['questions']] %>%
+  looped_question_ids = survey_flat[['questions']] %>%
     dplyr::distinct(question_id, block_id) %>%
     dplyr::left_join(
-      y = flattened_survey[['blocks']],
+      y = survey_flat[['blocks']],
       by = 'block_id'
     ) %>%
     dplyr::transmute(
