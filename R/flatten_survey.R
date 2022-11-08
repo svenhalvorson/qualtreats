@@ -335,7 +335,7 @@ flatten_questions = function(
         question_id = question_id,
         column_number = as.integer(names(sbs_columns)),
         column_export_tag = purrr::map_chr(sbs_columns, subset_safely, 'AnswerDataExportTag'),
-        column_text = purrr::map_chr(sbs_columns, subset_safely, 'QuestionText'),
+        column_description = purrr::map_chr(sbs_columns, subset_safely, 'QuestionText'),
         column_type = purrr::map_chr(sbs_columns, subset_safely, 'QuestionType'),
         column_selector = purrr::map_chr(sbs_columns, subset_safely, 'Selector'),
         column_subselector = purrr::map_chr(sbs_columns, subset_safely, 'SubSelector')
@@ -391,7 +391,7 @@ flatten_questions = function(
     ~subq_text_entry,
     ~column_number,
     ~column_export_tag,
-    ~column_text,
+    ~column_description,
     ~column_type,
     ~column_selector,
     ~column_subselector

@@ -112,6 +112,12 @@ simplify_qtypes = function(survey_id, survey_flat){
 #
 #   qtype_cross = readr::read_csv(
 #     here::here('in_progress/in_progress_data/qtype_cross.csv')
+#   ) %>%
+#   mutate(
+#     across(
+#       all_of(c('question_matrix', 'question_sbs')),
+#       as.integer
+#     )
 #   )
 #
 #   usethis::use_data(qtype_cross, internal = TRUE, overwrite = TRUE)
