@@ -371,9 +371,11 @@ get_column_map = function(
   question_names = survey_flat[['blocks']] %>%
     dplyr::select(block_description, block_id) %>%
     dplyr::left_join(
-      y = dplyr::select(survey_flat[['questions']], question_id, block_id),
+      y = dplyr::select(survey_flat[['questions']], question_id, block_id, question_type),
       by = 'block_id'
     ) %>%
+    # Descriptive boxes aren't exported:
+    dplyr::filter(question_type != 'DB') %>%
     # repeats on column_number and subq_number mean we wanna grind this down:
     dplyr::distinct(block_description, block_id, question_id) %>%
     dplyr::group_by(block_id) %>%
