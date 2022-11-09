@@ -17,7 +17,7 @@ flatten_survey(
 
 \item{out_dir}{path to directory where files can be written}
 
-\item{file_prefix}{string prefix to file names}
+\item{file_prefix}{string prefix to file names to be written}
 
 \item{file_format}{one of \code{c('csv', 'tsv')}}
 

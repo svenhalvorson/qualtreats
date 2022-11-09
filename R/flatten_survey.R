@@ -3,7 +3,7 @@
 #' Qualtrics survey into rectangular data sets.
 #' @param survey_id string of the survey id, begins with 'SV_'
 #' @param out_dir path to directory where files can be written
-#' @param file_prefix string prefix to file names
+#' @param file_prefix string prefix to file names to be written
 #' @param file_format one of \code{c('csv', 'tsv')}
 #' @param drop_trash Should questions in the trash bin be discarded?
 #' @return a named list of the three tables generated
@@ -69,6 +69,19 @@ flatten_survey = function(
     )
 
   }
+
+  # All the purr map functions keep names (which I hate) so let's kill them off:
+  results = purrr::map(
+    .x = results,
+    .f = function(x){
+      dplyr::mutate(
+        .data = x,
+        dplyr::across(
+          .fns = unname
+        )
+      )
+    }
+  )
 
 
   # If we want to write:
