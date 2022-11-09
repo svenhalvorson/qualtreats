@@ -133,8 +133,9 @@ flatten_blocks = function(
   block_order = tibble::tibble(
     block_id = purrr::map_chr(
       .x = survey[['SurveyFlow']][['Flow']],
-      .f = subset_safely,
-      'ID'
+      .f = purrr::pluck,
+      'ID',
+      .default = NA_character_
     )
   ) %>%
     dplyr::distinct()
@@ -143,19 +144,22 @@ flatten_blocks = function(
   block_df = tibble::tibble(
     block_id = purrr::map_chr(
       .x = blocks,
-      .f = subset_safely,
-      'ID'
+      .f = purrr::pluck,
+      'ID',
+      .default = NA_character_
     ),
     block_description = purrr::map_chr(
       .x = blocks,
-      .f = subset_safely,
-      'Description'
+      .f = purrr::pluck,
+      'Description',
+      .default = NA_character_
     ),
     loop_and_merge = purrr::map_chr(
       .x = blocks,
-      .f = subset_safely,
+      .f = purrr::pluck,
       'Options',
-      'Looping'
+      'Looping',
+      .default = NA_character_
     )
   ) %>%
     dplyr::mutate(
@@ -206,8 +210,9 @@ flatten_question_block = function(
         block_id = block_id,
         question_id = purrr::map_chr(
           .x = elements,
-          .f = subset_safely,
-          'QuestionID'
+          .f = purrr::pluck,
+          'QuestionID',
+          .default = NA_character_
         )
       )
     }
@@ -223,8 +228,9 @@ flatten_question_block = function(
   block_order = tibble::tibble(
     block_id = purrr::map_chr(
       .x = survey[['SurveyFlow']][['Flow']],
-      .f = subset_safely,
-      'ID'
+      .f = purrr::pluck,
+      'ID',
+      .default = NA_character_
     )
   ) %>%
     dplyr::distinct()
@@ -253,13 +259,13 @@ flatten_questions = function(
     question = questions[[question_id]]
 
     tibble::tibble(
-      'question_id' = subset_safely(question, 'QuestionID'),
-      'question_text' = subset_safely(question, 'QuestionText'),
-      'question_description' = subset_safely(question, 'QuestionDescription'),
-      'question_export_tag' = subset_safely(question, 'DataExportTag'),
-      'question_type' = subset_safely(question, 'QuestionType'),
-      'question_selector' = subset_safely(question, 'Selector'),
-      'question_subselector' = subset_safely(question, 'SubSelector')
+      'question_id' = purrr::pluck(question, 'QuestionID', .default = NA_character_),
+      'question_text' = purrr::pluck(question, 'QuestionText', .default = NA_character_),
+      'question_description' = purrr::pluck(question, 'QuestionDescription', .default = NA_character_),
+      'question_export_tag' = purrr::pluck(question, 'DataExportTag', .default = NA_character_),
+      'question_type' = purrr::pluck(question, 'QuestionType', .default = NA_character_),
+      'question_selector' = purrr::pluck(question, 'Selector', .default = NA_character_),
+      'question_subselector' = purrr::pluck(question, 'SubSelector', .default = NA_character_)
     )
   }
 
@@ -295,8 +301,9 @@ flatten_questions = function(
         'subq_order' = purrr::map_int(question[['ChoiceOrder']], as.integer),
         'subq_description' = purrr::map_chr(
           .x = subquestions,
-          .f = subset_safely,
-          'Display'
+          .f = purrr::pluck,
+          'Display',
+          .default = NA_character_
         ),
         'subq_text_entry' = purrr::map_int(
           .x = subquestions,
@@ -347,11 +354,11 @@ flatten_questions = function(
       tibble::tibble(
         question_id = question_id,
         column_number = as.integer(names(sbs_columns)),
-        column_export_tag = purrr::map_chr(sbs_columns, subset_safely, 'AnswerDataExportTag'),
-        column_description = purrr::map_chr(sbs_columns, subset_safely, 'QuestionText'),
-        column_type = purrr::map_chr(sbs_columns, subset_safely, 'QuestionType'),
-        column_selector = purrr::map_chr(sbs_columns, subset_safely, 'Selector'),
-        column_subselector = purrr::map_chr(sbs_columns, subset_safely, 'SubSelector')
+        column_export_tag = purrr::map_chr(sbs_columns, purrr::pluck, 'AnswerDataExportTag', .default = NA_character_),
+        column_description = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionText', .default = NA_character_),
+        column_type = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionType', .default = NA_character_),
+        column_selector = purrr::map_chr(sbs_columns, purrr::pluck, 'Selector', .default = NA_character_),
+        column_subselector = purrr::map_chr(sbs_columns, purrr::pluck, 'SubSelector', .default = NA_character_)
       )
 
     }
@@ -473,7 +480,7 @@ flatten_choices = function(
           choice = as.integer(names(choices)),
           choice_order = as.integer(1:length(choices)), # always in order for SBS it seems?
           choice_recode = recodes,
-          choice_description = purrr::map_chr(choices, subset_safely, 'Display')
+          choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_)
         )
 
 
@@ -513,7 +520,7 @@ flatten_choices = function(
         question_id = question[['QuestionID']],
         choice = as.integer(names(choices)),
         choice_recode = recodes,
-        choice_description = purrr::map_chr(choices, subset_safely, 'Display'),
+        choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_),
         choice_text_entry = purrr::map_int(choices, function(x){'TextEntry' %in% names(x)})
       )
 

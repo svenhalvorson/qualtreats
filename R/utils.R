@@ -31,22 +31,6 @@ valid_out_dir = function(out_dir){
   is.null(out_dir) || dir.exists(out_dir)
 }
 
-#' Subset if possible
-#' @keywords internal
-#' @param l a named list
-#' @param ... other strings used for name accessors
-subset_safely = function(l, ...){
-  nests = list(...)
-  for(nest in nests){
-    if(nest %in% names(l)){
-      l = l[[nest]]
-    } else{
-      return(NA)
-    }
-  }
-
-  return(l)
-}
 
 #' Pad to two digits
 #' @param string a string

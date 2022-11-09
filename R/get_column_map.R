@@ -89,11 +89,11 @@ get_column_map = function(
   # Want these elements:
   # question_id, qtype, matrix, sbs, export_tags
   get_exported_choice = function(x){
-    as.integer(subset_safely(jsonlite::fromJSON(x), 'choiceId'))
-  } # This only seems to get the
+    as.integer(purrr::pluck(jsonlite::fromJSON(x), 'choiceId', .default = NA_character_))
+  } # This only seems to get the checkbox questions
 
   get_variable_label = function(x){
-    subset_safely(jsonlite::fromJSON(x), 'ImportId')
+    purrr::pluck(jsonlite::fromJSON(x), 'ImportId', .default = NA_character_)
   }
 
   column_map = tibble::tibble(
