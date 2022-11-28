@@ -2,9 +2,11 @@
 
 export("flatten_survey")
 export("simplify_qtypes")
+export(format_description)
 export(get_column_map)
 export(get_responses)
 export(get_survey)
 export(pad2)
 export(rename_dict)
+export(var_lab_dict)
 importFrom(magrittr,"%>%")
