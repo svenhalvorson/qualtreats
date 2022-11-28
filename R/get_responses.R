@@ -89,7 +89,7 @@ get_responses = function(
   # this portion since I thought it was just for the visual but
   # if you try to procede before the server processes the request
   # it will not be able to download correctly
-  message(cat(paste0('\nDownloading survey : ', survey_id, '\n\n')))
+  message(paste0('\nDownloading survey : ', survey_id, '\n\n'))
   progress <- 0
   while (progress < 100) {
     # Get percentage complete

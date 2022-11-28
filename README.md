@@ -96,11 +96,6 @@ Here we call `get_column_map`:
 
 ``` r
 column_map = qualtreats::get_column_map(survey_id)
-#> 
-#> Downloading survey : SV_bg4hf9VdW9CwmiO
-#> 
-#> 
-#> Downloading survey : SV_bg4hf9VdW9CwmiO
 
 column_map |>
   dplyr::select(column_exported, column_harmonized, choice, question_id) |>
@@ -125,8 +120,6 @@ These may help with renaming and labels:
 
 ``` r
 responses = qualtreats::get_responses(survey_id)
-#> 
-#> Downloading survey : SV_bg4hf9VdW9CwmiO
 
 responses = qualtreats::rename_dict(
   df = responses,
