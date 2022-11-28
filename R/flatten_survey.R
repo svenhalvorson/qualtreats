@@ -395,26 +395,26 @@ flatten_questions = function(
   )
 
   # Set the column order of the output:
-  question_df = tibble::tribble(
-    ~question_id,
-    ~block_id,
-    ~question_export_tag,
-    ~question_description,
-    ~question_text,
-    ~question_type,
-    ~question_selector,
-    ~question_subselector,
-    ~subq_order,
-    ~subq_number,
-    ~subq_export_tag,
-    ~subq_description,
-    ~subq_text_entry,
-    ~column_number,
-    ~column_export_tag,
-    ~column_description,
-    ~column_type,
-    ~column_selector,
-    ~column_subselector
+  question_df = tibble::tibble(
+    question_id = character(0),
+    block_id = character(0),
+    question_export_tag = character(0),
+    question_description = character(0),
+    question_text = character(0),
+    question_type = character(0),
+    question_selector = character(0),
+    question_subselector = character(0),
+    subq_order = integer(0),
+    subq_number = integer(0),
+    subq_export_tag = character(0),
+    subq_description = character(0),
+    subq_text_entry = integer(0),
+    column_number = integer(0),
+    column_export_tag = character(0),
+    column_description = character(0),
+    column_type = character(0),
+    column_selector = character(0),
+    column_subselector = character(0)
   ) %>%
   dplyr::bind_rows(question_df)
 
@@ -437,16 +437,16 @@ flatten_choices = function(
   # So what I had written previously was a bit convoluted. Feel like I
   # just need to write one function that takes in a question, and
   # givs back the associated data frame for that. Should have these columns:
-  tibble::tribble(
-    ~question_id,
-    ~column_number,
-    ~choice_order,
-    ~choice,
-    ~choice_recode,
-    ~choice_description,
-    ~choice_text_entry,
-    ~choice_analyze
-  )
+  # tibble::tribble(
+  #   ~question_id,
+  #   ~column_number,
+  #   ~choice_order,
+  #   ~choice,
+  #   ~choice_recode,
+  #   ~choice_description,
+  #   ~choice_text_entry,
+  #   ~choice_analyze
+  # )
 
   get_choice_df = function(question){
 
@@ -542,6 +542,19 @@ flatten_choices = function(
   choice_df = flatten_question_block(survey) %>%
     dplyr::distinct(question_id) %>%
     dplyr::inner_join(choice_df, by = 'question_id')
+
+  # make sure we always have these columns:
+
+  tibble::tibble(
+    question_id = character(0),
+    column_number = integer(0),
+    choice_order = integer(0),
+    choice = character(0),
+    choice_recode = integer(0),
+    choice_description = character(0),
+    choice_text_entry = integer(0),
+    choice_analyze = integer(0)
+  )
 
   choice_df
 
