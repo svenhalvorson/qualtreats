@@ -15,9 +15,9 @@
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 #' @seealso API call references:
 #' \itemize{
-#'   \item \href{https://api.qualtrics.com/api-reference/b3A6NjExMTE-get-survey}{survey}
-#'   \item \href{can't find this rn}{definitions}
-#'   \item \href{https://api.qualtrics.com/api-reference/b3A6NjEwNzk-get-survey-metadata}{metadata}
+#'   \item \href{https://api.qualtrics.com/73d7e07ec68b2-get-survey}{survey}
+#'   \item \href{https://api.qualtrics.com/9d0928392673d-get-survey}{definitions}
+#'   \item \href{https://api.qualtrics.com/a92bfbc7e58fe-get-survey-metadata}{metadata}
 #' }
 get_survey = function(
   survey_id,
