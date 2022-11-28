@@ -171,7 +171,7 @@ get_responses = function(
 
   # Delete var labs if not requested:
   if(!variable_labels){
-    responses = expss::drop_var_labs(responses)
+    responses = haven::zap_label(responses)
   }
   # Note that this is a bit weird looking but we have to accomodate the case
   # of file_format == 'spss' & variable_labels == FALSE which is unlikely
