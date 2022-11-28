@@ -45,3 +45,30 @@ pad2 = function(string){
     pad = '0'
   )
 }
+
+#' Format Descriptions
+#' @param string a string
+#' @export
+#' @description Remove some HTML nonsense from a string
+format_description = function(string){
+
+  string %>%
+    stringr::str_replace_all(
+      pattern = '<[^>]*>',
+      replacement = ' '
+    ) %>%
+    stringr::str_replace_all(
+      pattern = stringr::fixed('&nbsp;'),
+      replacement = ' '
+    ) %>%
+    stringr::str_replace_all(
+      pattern = '(\\t|\\n)+',
+      replacement = ' '
+    ) %>%
+    stringr::str_replace_all(
+      pattern = ' +',
+      replacement = ' '
+    ) %>%
+    trimws()
+
+}
