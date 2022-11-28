@@ -1,12 +1,9 @@
 
 # qualtreats
 
-Process, organize, and document data from Qualtrics
-
 Install like this:
 
 ``` r
-
 devtools::install_github('svenhalvorson/qualtreats')
 ```
 
@@ -17,17 +14,22 @@ library](https://github.com/ropensci/qualtRics) uses them:
 1.  `QUALTRICS_API_KEY` = ‘your_api_key’
 2.  `QUALTRICS_BASE_URL` = ‘….qualtrics.com’
 
+### Flatten a survey
+
 The function `flatten_survey` creates a semi-curated version of the
 survey definitions from [this API
 call](https://api.qualtrics.com/9d0928392673d-get-survey). Set a survey
 ID and flatten the survey into three tables:
 
 ``` r
-
 survey_id = 'SV_bg4hf9VdW9CwmiO'
 
 survey_flat = qualtreats::flatten_survey(survey_id)
+```
 
+Here are *a few* of the columns in the questions table:
+
+``` r
 survey_flat[['questions']] |> 
   dplyr::select(question_id, question_description, question_type, question_selector) |>
   head()
@@ -43,8 +45,9 @@ survey_flat[['questions']] |>
 #> # … with abbreviated variable names ¹​question_type, ²​question_selector
 ```
 
-``` r
+And the choices table:
 
+``` r
 head(survey_flat[['choices']])
 #> # A tibble: 6 × 7
 #>   question_id choice_order choice choice_recode choice_descrip…¹ choic…² colum…³
@@ -59,13 +62,18 @@ head(survey_flat[['choices']])
 #> #   ³​column_number
 ```
 
+There is also a blocks table which is typically less interesting (but
+still useful).
+
+### Simplify question types
+
 The next function, `simplify_qtypes`, makes a list of all the questions
-and assigns some flags to them. I characterized the question attributes
-in the column `question_style`. This can accept either the survey_id or
-a flattened survey (faster).
+and assigns some flags to them. It will tell you if a question is a
+matrix, side-by-side (sbs), or is part of a loop-and-merge. It
+characterizes the question attributes in the column `question_style`.
+This can accept either the `survey_id` or a flattened survey (faster).
 
 ``` r
-
 survey_qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
 head(survey_qtypes)
 #> # A tibble: 6 × 6
@@ -80,12 +88,13 @@ head(survey_qtypes)
 #> # … with abbreviated variable name ¹​question_loop
 ```
 
+### Get a column map
+
 When working with survey responses, I found it useful to know the
 associations between what Qualtrics exports and the question attributes.
 Here we call `get_column_map`:
 
 ``` r
-
 column_map = qualtreats::get_column_map(survey_id)
 #> 
 #> Downloading survey : SV_bg4hf9VdW9CwmiO
@@ -93,33 +102,28 @@ column_map = qualtreats::get_column_map(survey_id)
 #> 
 #> Downloading survey : SV_bg4hf9VdW9CwmiO
 
-head(column_map)
-#> # A tibble: 6 × 17
-#>   column_expor…¹ colum…² varia…³ varia…⁴ quest…⁵ colum…⁶ subq_…⁷ quest…⁸ impor…⁹
-#>   <chr>          <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>  
-#> 1 Gender         Demogr… What i… What i… Gender  <NA>    <NA>    QID1    QID1   
-#> 2 Age            Demogr… What i… What i… Age     <NA>    <NA>    QID2    QID2   
-#> 3 Ethnicity1     Demogr… Are yo… Are yo… Ethnic… <NA>    <NA>    QID3    QID3   
-#> 4 Ethnicity2_1   Demogr… How wo… How wo… Ethnic… <NA>    <NA>    QID4    QID4   
-#> 5 Ethnicity2_2   Demogr… How wo… How wo… Ethnic… <NA>    <NA>    QID4    QID4   
-#> 6 Ethnicity2_3   Demogr… How wo… How wo… Ethnic… <NA>    <NA>    QID4    QID4   
-#> # … with 8 more variables: question_name <chr>, suffix <chr>,
-#> #   loop_number <int>, column_number <int>, subq_number <int>, choice <int>,
-#> #   choice_recode <int>, text_entry <int>, and abbreviated variable names
-#> #   ¹​column_exported, ²​column_harmonized, ³​variable_label_exported,
-#> #   ⁴​variable_label, ⁵​question_export_tag, ⁶​column_export_tag,
-#> #   ⁷​subq_export_tag, ⁸​question_id, ⁹​import_id
+column_map |>
+  dplyr::select(column_exported, column_harmonized, choice, question_id) |>
+  head()
+#> # A tibble: 6 × 4
+#>   column_exported column_harmonized    choice question_id
+#>   <chr>           <chr>                 <int> <chr>      
+#> 1 Gender          Demographics_01          NA QID1       
+#> 2 Age             Demographics_02          NA QID2       
+#> 3 Ethnicity1      Demographics_03          NA QID3       
+#> 4 Ethnicity2_1    Demographics_04_CH01      1 QID4       
+#> 5 Ethnicity2_2    Demographics_04_CH02      2 QID4       
+#> 6 Ethnicity2_3    Demographics_04_CH03      3 QID4
 ```
 
 The first column of this data frame is the columns of the data set that
 qualtrics gives when responses are exported. Some of the columns are
 attributes of that column such as the associated `choice`,
-`subq_number`, and `column_number`. Other columns are ones I created
-(ex: `column_harmonized` & `question_name`) which may help with
-renaming:
+`subq_number`, and `column_number`. Other columns, like
+`column_harmonized` & `question_name`, are ones qualtreats generates.
+These may help with renaming and labels:
 
 ``` r
-
 responses = qualtreats::get_responses(survey_id)
 #> 
 #> Downloading survey : SV_bg4hf9VdW9CwmiO

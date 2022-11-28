@@ -3,7 +3,6 @@ output: github_document
 ---
 
 # qualtreats
-Process, organize, and document data from Qualtrics
 
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(
@@ -20,9 +19,7 @@ knitr::opts_chunk$set(
 Install like this:
 
 ```{r, eval = FALSE}
-
 devtools::install_github('svenhalvorson/qualtreats')
-
 ```
 
 These two environment variables (should be accessible by `Sys.getenv`) need
@@ -31,44 +28,49 @@ to be set in the same way that the [qualtRics library](https://github.com/ropens
 1. `QUALTRICS_API_KEY` = 'your_api_key'
 2. `QUALTRICS_BASE_URL` = '....qualtrics.com'
 
+### Flatten a survey  
 The function `flatten_survey` creates a semi-curated version of the survey definitions from [this API call](https://api.qualtrics.com/9d0928392673d-get-survey). Set a survey ID and flatten the survey into three tables:
 
 ```{r}
-
 survey_id = 'SV_bg4hf9VdW9CwmiO'
 
 survey_flat = qualtreats::flatten_survey(survey_id)
+```
 
+Here are *a few* of the columns in the questions table:
+
+```{r}
 survey_flat[['questions']] |> 
   dplyr::select(question_id, question_description, question_type, question_selector) |>
   head()
 
 ```
 
-
+And the choices table:
 ```{r}
-
 head(survey_flat[['choices']])
-
 ```
 
+There is also a blocks table which is typically less interesting (but still useful).
+
+### Simplify question types    
 The next function, `simplify_qtypes`, makes a list of all the questions
-and assigns some flags to them. I characterized the question attributes in the
-column `question_style`. This can accept either the `survey_id` or a flattened
-survey (faster).
+and assigns some flags to them. It will tell you if a question is a matrix,
+side-by-side (sbs), or is part of a loop-and-merge. It characterizes the question 
+attributes in the column `question_style`. This can accept either the 
+`survey_id` or a flattened survey (faster).
 
 ```{r}
-
 survey_qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
 head(survey_qtypes)
 ```
 
+### Get a column map  
 When working with survey responses, I found it useful to know the associations
 between what Qualtrics exports and the question attributes. Here we call 
 `get_column_map`:
 
 ```{r}
-
 column_map = qualtreats::get_column_map(survey_id)
 
 column_map |>
@@ -83,7 +85,6 @@ and `column_number`. Other columns, like `column_harmonized` & `question_name`,
 are ones qualtreats generates. These may help with renaming and labels:
 
 ```{r}
-
 responses = qualtreats::get_responses(survey_id)
 
 responses = qualtreats::rename_dict(
@@ -97,5 +98,4 @@ responses = qualtreats::var_lab_dict(
   column_names = column_map[['column_harmonized']],
   var_labs = column_map[['variable_label']]
 )
-
 ```
