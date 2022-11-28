@@ -1,0 +1,101 @@
+---
+output: github_document
+---
+
+# qualtreats
+Process, organize, and document data from Qualtrics
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = '#>',
+  fig.path = 'man/figures/README-',
+  out.width = '100%',
+  warning = FALSE,
+  message = FALSE
+)
+
+```
+
+Install like this:
+
+```{r, eval = FALSE}
+
+devtools::install_github('svenhalvorson/qualtreats')
+
+```
+
+These two environment variables (should be accessible by `Sys.getenv`) need
+to be set in the same way that the [qualtRics library](https://github.com/ropensci/qualtRics) uses them:
+
+1. `QUALTRICS_API_KEY` = 'your_api_key'
+2. `QUALTRICS_BASE_URL` = '....qualtrics.com'
+
+The function `flatten_survey` creates a semi-curated version of the survey definitions from [this API call](https://api.qualtrics.com/9d0928392673d-get-survey). Set a survey ID and flatten the survey into three tables:
+
+```{r}
+
+survey_id = 'SV_bg4hf9VdW9CwmiO'
+
+survey_flat = qualtreats::flatten_survey(survey_id)
+
+survey_flat[['questions']] |> 
+  dplyr::select(question_id, question_description, question_type, question_selector) |>
+  head()
+
+```
+
+
+```{r}
+
+head(survey_flat[['choices']])
+
+```
+
+The next function, `simplify_qtypes`, makes a list of all the questions
+and assigns some flags to them. I characterized the question attributes in the
+column `question_style`. This can accept either the `survey_id` or a flattened
+survey (faster).
+
+```{r}
+
+survey_qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
+head(survey_qtypes)
+```
+
+When working with survey responses, I found it useful to know the associations
+between what Qualtrics exports and the question attributes. Here we call 
+`get_column_map`:
+
+```{r}
+
+column_map = qualtreats::get_column_map(survey_id)
+
+column_map |>
+  dplyr::select(column_exported, column_harmonized, choice, question_id) |>
+  head()
+```
+
+The first column of this data frame is the columns of the data
+set that qualtrics gives when responses are exported. Some of the columns
+are attributes of that column such as the associated `choice`, `subq_number`,
+and `column_number`. Other columns, like `column_harmonized` & `question_name`, 
+are ones qualtreats generates. These may help with renaming and labels:
+
+```{r}
+
+responses = qualtreats::get_responses(survey_id)
+
+responses = qualtreats::rename_dict(
+  df = responses,
+  old_names = column_map[['column_exported']],
+  new_names = column_map[['column_harmonized']]
+)
+
+responses = qualtreats::var_lab_dict(
+  df = responses,
+  column_names = column_map[['column_harmonized']],
+  var_labs = column_map[['variable_label']]
+)
+
+```
