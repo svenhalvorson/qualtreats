@@ -56,30 +56,37 @@ get_column_map = function(
   # Get exported columns ----------------------------------------------------
 
   # Get the exported column names and associated columns:
-  exported_columns = qualtreats::get_responses(
-    survey_id = survey_id,
-    file_format = file_format,
-    trim_rows = FALSE,
-    limit = 0
+  exported_columns = suppressMessages(
+    qualtreats::get_responses(
+      survey_id = survey_id,
+      file_format = file_format,
+      trim_rows = FALSE,
+      limit = 0
+    )
   ) %>%
     dplyr::select(-(StartDate:UserLanguage))
 
   # Have to re-do it if file_format == 'spss' since it doesn't give metadata:
   if(file_format == 'spss'){
-    exported_metadata = qualtreats::get_responses(
-      survey_id = survey_id,
-      file_format = 'csv',
-      trim_rows = FALSE,
-      limit = 0
+
+    exported_metadata = suppressMessages(
+      qualtreats::get_responses(
+        survey_id = survey_id,
+        file_format = 'csv',
+        trim_rows = FALSE,
+        limit = 0
+      )
     ) %>%
       dplyr::select(-(StartDate:UserLanguage)) %>%
       dplyr::slice(2) %>%
       as.character()
+
     variable_label_exported = purrr::map_chr(
       .x = exported_columns,
       .f = attr,
       'label'
     )
+
   }else {
     exported_metadata = as.character(dplyr::slice(exported_columns, 2))
     variable_label_exported = as.character(dplyr::slice(exported_columns, 1))

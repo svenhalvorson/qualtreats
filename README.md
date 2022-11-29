@@ -1,7 +1,13 @@
 
 # qualtreats
 
-Install like this:
+Qualtreats is a library that allows you to easily use data about
+Qualtrics surveys extracted from the API. You can generate tables that
+describe the questions, blocks, choices, and exported columns of a
+survey. This is particularly useful for checking that the survey is
+configured correctly or comparing surveys.
+
+Install it like this:
 
 ``` r
 devtools::install_github('svenhalvorson/qualtreats')
@@ -12,7 +18,8 @@ need to be set in the same way that the [qualtRics
 library](https://github.com/ropensci/qualtRics) uses them:
 
 1.  `QUALTRICS_API_KEY` = ‘your_api_key’
-2.  `QUALTRICS_BASE_URL` = ‘….qualtrics.com’
+2.  `QUALTRICS_BASE_URL` = ‘oregon.ca1.qualtrics.com’ (depends on
+    organization)
 
 ### Flatten a survey
 
@@ -49,17 +56,17 @@ And the choices table:
 
 ``` r
 head(survey_flat[['choices']])
-#> # A tibble: 6 × 7
-#>   question_id choice_order choice choice_recode choice_descrip…¹ choic…² colum…³
-#>   <chr>              <int>  <int>         <int> <chr>              <int>   <int>
-#> 1 QID1                   1      1            NA Male                   0      NA
-#> 2 QID1                   2      2            NA Female                 0      NA
-#> 3 QID1                   3      3            NA Other                  0      NA
-#> 4 QID2                   1      1            NA Under 18               0      NA
-#> 5 QID2                   2      2            NA 18 - 24                0      NA
-#> 6 QID2                   3      3            NA 25 - 34                0      NA
-#> # … with abbreviated variable names ¹​choice_description, ²​choice_text_entry,
-#> #   ³​column_number
+#> # A tibble: 6 × 8
+#>   question_id column_number choice_order choice choice…¹ choic…² choic…³ choic…⁴
+#>   <chr>               <int>        <int>  <int>    <int> <chr>     <int>   <int>
+#> 1 QID1                   NA            1      1       NA Male          0       1
+#> 2 QID1                   NA            2      2       NA Female        0       1
+#> 3 QID1                   NA            3      3       NA Other         0       1
+#> 4 QID2                   NA            1      1       NA Under …       0       1
+#> 5 QID2                   NA            2      2       NA 18 - 24       0       1
+#> 6 QID2                   NA            3      3       NA 25 - 34       0       1
+#> # … with abbreviated variable names ¹​choice_recode, ²​choice_description,
+#> #   ³​choice_text_entry, ⁴​choice_analyze
 ```
 
 There is also a blocks table which is typically less interesting (but
@@ -112,11 +119,13 @@ column_map |>
 ```
 
 The first column of this data frame is the columns of the data set that
-qualtrics gives when responses are exported. Some of the columns are
+qualtrics gives when responses are exported. Some of the variables are
 attributes of that column such as the associated `choice`,
-`subq_number`, and `column_number`. Other columns, like
-`column_harmonized` & `question_name`, are ones qualtreats generates.
-These may help with renaming and labels:
+`subq_number`, and `column_number`. Other variables, like
+`column_harmonized` & `question_name`, are ones qualtreats generates. I
+tried to make some question names and suffixes that could be used if you
+do not want to define them yourself. You an use the “dictionary style”
+renaming and label functions:
 
 ``` r
 responses = qualtreats::get_responses(survey_id)

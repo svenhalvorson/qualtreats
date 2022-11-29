@@ -336,6 +336,8 @@ flatten_questions = function(
       .x = names(matrix_questions),
       .f = get_subquestions
     )
+  } else{
+    subquestion_df = tibble::tibble(question_id = character(0))
   }
 
   # Now the dreaded sbs question
@@ -524,6 +526,19 @@ flatten_choices = function(
         choice_text_entry = purrr::map_int(choices, function(x){'TextEntry' %in% names(x)})
       )
 
+      # Choice analyze kept in another piece:
+      if('AnalyzeChoices' %in% names(question)){
+        analyze_choices = question[['AnalyzeChoices']] %>%
+          purrr::keep(.p = function(x){x == 'No'}) %>%
+          names() %>%
+          as.integer()
+
+        choice_df[['choice_analyze']] = as.integer(!choice_df$choice %in% analyze_choices)
+
+      } else{
+        choice_df[['choice_analyze']] = 1L
+      }
+
       choice_df = dplyr::left_join(choice_order, choice_df, by = 'choice')
 
     }
@@ -549,14 +564,13 @@ flatten_choices = function(
     question_id = character(0),
     column_number = integer(0),
     choice_order = integer(0),
-    choice = character(0),
+    choice = integer(0),
     choice_recode = integer(0),
     choice_description = character(0),
     choice_text_entry = integer(0),
     choice_analyze = integer(0)
-  )
-
-  choice_df
+  ) %>%
+    dplyr::bind_rows(choice_df)
 
 }
 

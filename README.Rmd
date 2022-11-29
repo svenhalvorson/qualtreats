@@ -15,7 +15,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-Install like this:
+Qualtreats is a library that allows you to easily use data about Qualtrics surveys
+extracted from the API. You can generate tables that describe the questions,
+blocks, choices, and exported columns of a survey. This is particularly useful
+for checking that the survey is configured correctly or comparing surveys.
+
+Install it like this:
 
 ```{r, eval = FALSE}
 devtools::install_github('svenhalvorson/qualtreats')
@@ -25,7 +30,7 @@ These two environment variables (should be accessible by `Sys.getenv`) need
 to be set in the same way that the [qualtRics library](https://github.com/ropensci/qualtRics) uses them:
 
 1. `QUALTRICS_API_KEY` = 'your_api_key'
-2. `QUALTRICS_BASE_URL` = '....qualtrics.com'
+2. `QUALTRICS_BASE_URL` = 'oregon.ca1.qualtrics.com' (depends on organization)
 
 ### Flatten a survey  
 The function `flatten_survey` creates a semi-curated version of the survey definitions from [this API call](https://api.qualtrics.com/9d0928392673d-get-survey). Set a survey ID and flatten the survey into three tables:
@@ -78,10 +83,12 @@ column_map |>
 ```
 
 The first column of this data frame is the columns of the data
-set that qualtrics gives when responses are exported. Some of the columns
+set that qualtrics gives when responses are exported. Some of the variables
 are attributes of that column such as the associated `choice`, `subq_number`,
-and `column_number`. Other columns, like `column_harmonized` & `question_name`, 
-are ones qualtreats generates. These may help with renaming and labels:
+and `column_number`. Other variables, like `column_harmonized` & `question_name`, 
+are ones qualtreats generates. I tried to make some question names and 
+suffixes that could be used if you do not want to define them yourself.
+You an use the "dictionary style" renaming and label functions:
 
 ```{r}
 responses = qualtreats::get_responses(survey_id)
