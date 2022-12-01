@@ -118,7 +118,8 @@ get_column_map = function(
     choice_recode = purrr::map_int(
       .x = exported_metadata,
       .f = get_exported_choice
-    )
+    ),
+    embedded_data = as.integer(is.na(question_id))
   )
 
   # Set aside for error check:
@@ -194,8 +195,10 @@ get_column_map = function(
   # little check in case we don't understand this export schema as well as we think:
   if(
     any(
+      column_map %>%
+      dplyr::filter(embedded_data == 0) %>%
+      dplyr::pull(suffix) %>%
       stringr::str_detect(
-        string = column_map[['suffix']],
         pattern = '#'
       )
     )
@@ -290,8 +293,10 @@ get_column_map = function(
   # Shouldn't be any numbers remaining as far as I know:
   if(
     any(
+      column_map %>%
+      dplyr::filter(embedded_data == 0) %>%
+      dplyr::pull(suffix) %>%
       stringr::str_detect(
-        string = column_map[['suffix']],
         pattern = '[0-9]'
       )
     )
@@ -313,7 +318,7 @@ get_column_map = function(
           string = suffix,
           pattern = 'TEXT'
         )
-       & (!question_id %in% text_question_ids | question_id %in% sbs_question_ids)
+        & (!question_id %in% text_question_ids | question_id %in% sbs_question_ids)
       ),
       suffix = stringr::str_remove(
         string = suffix,
@@ -499,6 +504,7 @@ get_column_map = function(
       subq_export_tag,
       question_id,
       import_id,
+      embedded_data,
       question_name,
       suffix,
       loop_number,
@@ -507,6 +513,26 @@ get_column_map = function(
       choice,
       choice_recode,
       text_entry
+    )
+
+  # Don't think we want to have any values for the embedded data value except
+  # column_exported, import_id, and embedded_data:
+  column_map = column_map %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = -c('column_exported', 'import_id', 'embedded_data'),
+        .fns = function(x){
+          replace(
+            x = x,
+            list = embedded_data == 1L,
+            NA
+          )
+        }
+      ),
+      column_harmonized = dplyr::case_when(
+        embedded_data == 1L ~ column_exported,
+        TRUE ~ column_harmonized
+      )
     )
 
 
@@ -519,8 +545,3 @@ get_column_map = function(
   column_map
 
 }
-
-
-
-
-
