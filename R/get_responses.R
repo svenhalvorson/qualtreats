@@ -151,11 +151,12 @@ get_responses = function(
   # Apply variable labels in the case of non-spss formmat
   if(file_format != 'spss'){
 
-    # apply value labels
-    for(i in seq_along(responses)){
-      responses[[i]] = haven::labelled(responses[[i]], label = responses[1,i, drop = TRUE])
+    # apply variable labels
+    if(variable_labels){
+      for(i in seq_along(responses)){
+        responses[[i]] = haven::labelled(responses[[i]], label = responses[1,i, drop = TRUE])
+      }
     }
-
     # Slice off top, if there are no actual responses then
     # return it differently:
     if(trim_rows){
@@ -167,12 +168,14 @@ get_responses = function(
       responses = dplyr::slice(responses, response_rownums)
     }
 
+  }else{
+    # Delete var labs if not requested:
+    if(!variable_labels){
+      responses = haven::zap_label(responses)
+    }
   }
 
-  # Delete var labs if not requested:
-  if(!variable_labels){
-    responses = haven::zap_label(responses)
-  }
+
   # Note that this is a bit weird looking but we have to accomodate the case
   # of file_format == 'spss' & variable_labels == FALSE which is unlikely
   # but I suppose someone might want that.
