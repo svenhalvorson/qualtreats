@@ -18,7 +18,9 @@
 #'  \item \code{suffix}: suffix created by question characteristics
 #'  \item \code{loop_number}: loop number from "loop and merge" questions
 #'  \item \code{column_number}: column within side-by-side questions
-#'  \item \code{subq_number}: sub-question number within matrix or side-by-side questions
+#'  \item \code{subq_number}: internal id of that sub-question
+#'  \item \code{subq_order}: sub-question order within matrix or side-by-side questions.
+#'  Note that this is different from \code{subq_number}
 #'  \item \code{choice}: internal choice number from multiple choice questions
 #'  \item \code{choice_recode}: choice recode value
 #'  \item \code{text_entry}: binary representation of whether the choice
@@ -160,8 +162,6 @@ get_column_map = function(
         pattern = 'QID[0-9]+_?'
       )
     )
-
-
 
 
   # Column number ----------------------------------------------------------
@@ -326,6 +326,22 @@ get_column_map = function(
       )
     )
 
+  # Export tags -------------------------------------------------------------
+
+  column_map = column_map %>%
+    dplyr::left_join(
+      y = dplyr::select(
+        survey_flat[['questions']],
+        question_id,
+        question_export_tag,
+        column_export_tag,
+        subq_export_tag,
+        column_number,
+        subq_number,
+        subq_order
+      ),
+      by = c('question_id', 'column_number', 'subq_number')
+    )
 
   # Nice suffix -------------------------------------------------------------
 
@@ -341,7 +357,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       SQ = dplyr::case_when(
-        !is.na(subq_number) ~ paste0('_SQ', pad2(subq_number)),
+        !is.na(subq_order) ~ paste0('_SQ', pad2(subq_order)),
         TRUE ~ ''
       ),
       CH = dplyr::case_when(
@@ -361,22 +377,6 @@ get_column_map = function(
       suffix = paste0(LP, CL, SQ, CH, TEXT, suffix)
     )
 
-
-  # Export tags -------------------------------------------------------------
-
-  column_map = column_map %>%
-    dplyr::left_join(
-      y = dplyr::select(
-        survey_flat[['questions']],
-        question_id,
-        question_export_tag,
-        column_export_tag,
-        subq_export_tag,
-        column_number,
-        subq_number
-      ),
-      by = c('question_id', 'column_number', 'subq_number')
-    )
 
   # Question names -------------------------------------------------------------
 
@@ -510,6 +510,7 @@ get_column_map = function(
       loop_number,
       column_number,
       subq_number,
+      subq_order,
       choice,
       choice_recode,
       text_entry

@@ -298,7 +298,6 @@ flatten_questions = function(
       subquestion_df = tibble::tibble(
         'question_id' = question_id,
         'subq_number' = as.integer(names(subquestions)),
-        'subq_order' = purrr::map_int(question[['ChoiceOrder']], as.integer),
         'subq_description' = purrr::map_chr(
           .x = subquestions,
           .f = purrr::pluck,
@@ -310,6 +309,16 @@ flatten_questions = function(
           .f = function(x){'TextEntry' %in% names(x)}
         )
       )
+
+      # order them as they appear:
+      subquestion_df = tibble::tibble(
+        subq_order = as.integer(1:length(question[['ChoiceOrder']])),
+        subq_number = purrr::map_int(question[['ChoiceOrder']], as.integer)
+      ) %>%
+        dplyr::left_join(
+          y = subquestion_df,
+          by = 'subq_number'
+        )
 
       # Export tags may be missing, FALSE, or a list:
       subq_export_tags = question[['ChoiceDataExportTags']]
@@ -324,9 +333,6 @@ flatten_questions = function(
             by = 'subq_number'
           )
       }
-
-      # Sort them by the subq_order:
-      subquestion_df = dplyr::arrange(subquestion_df, subq_order)
 
       subquestion_df
 
