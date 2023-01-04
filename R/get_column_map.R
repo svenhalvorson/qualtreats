@@ -442,6 +442,15 @@ get_column_map = function(
     dplyr::left_join(
       y = var_labs_harmonized,
       by = c('question_id', 'column_number', 'subq_number')
+    ) %>%
+    # Let's set it so that the question description only shows for the
+    # first entry within a question
+    dplyr::group_by(question_id) %>%
+    dplyr::mutate(
+      question_description = dplyr::case_when(
+        dplyr::row_number() == 1 ~ question_description,
+        TRUE ~ ''
+      )
     )
 
   # add choice descriptions and make the variable label:
@@ -477,6 +486,11 @@ get_column_map = function(
         subq_description,
         choice_description,
         text_suffix
+      ),
+      # If there is no question description (not first), we want to remove the leading dash
+      variable_label = stringr::str_remove(
+        string = variable_label,
+        pattern = '^ - '
       )
     )
 
