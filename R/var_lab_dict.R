@@ -29,10 +29,7 @@ var_lab_dict = function(
 
   for(i in seq_along(column_names)){
     if(column_names[i] %in% colnames(df)){
-      df[[column_names[i]]] = haven::labelled(
-        x = df[[column_names[i]]],
-        label = var_labs[i]
-      )
+      attr(df[[column_names[i]]], 'label') = var_labs[i]
     }
   }
 
