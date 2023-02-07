@@ -295,6 +295,12 @@ flatten_questions = function(
 
       question = questions[[question_id]]
       subquestions = question[['Choices']]
+
+      # Safegaurd against zero length empty matrix:
+      if(length(subquestions) == 0){
+        return(tibble::tibble(question_id = character(0)))
+      }
+
       subquestion_df = tibble::tibble(
         'question_id' = question_id,
         'subq_number' = as.integer(names(subquestions)),
@@ -471,10 +477,13 @@ flatten_choices = function(
 
       # TODO need to make this work for the profile questions too
 
-      if(question$QuestionID == 'QID43'){browser()}
       get_column_choices = function(question_id, column_number, column_question){
 
         choices = column_question[['Answers']]
+
+        if(length(choices) == 0){
+          return(tibble::tibble(question_id = character(0)))
+        }
 
         if('RecodeValues' %in% names(column_question) && length(column_question[['RecodeValues']]) > 0 ){
           recodes = as.integer(column_question[['RecodeValues']])
@@ -508,6 +517,10 @@ flatten_choices = function(
     } else{
 
       choices = question[[ifelse(qtype %in% c('Matrix', 'DD'), 'Answers', 'Choices')]]
+
+      if(length(choices) == 0){
+        return(tibble::tibble(question_id = character(0)))
+      }
 
       choice_order = tibble::tibble(
         choice_order = as.integer(1:length(question[[corder]])),
