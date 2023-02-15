@@ -77,6 +77,7 @@ flatten_survey = function(
       dplyr::mutate(
         .data = x,
         dplyr::across(
+          .cols = everything(),
           .fns = unname
         )
       )
@@ -164,7 +165,10 @@ flatten_blocks = function(
   ) %>%
     dplyr::mutate(
       loop_and_merge = as.integer(!is.na(loop_and_merge)),
-      dplyr::across(.fns = unname)
+      dplyr::across(
+        .cols = everything(),
+        .fns = unname
+      )
     )
 
   block_df = block_order %>%
@@ -500,7 +504,6 @@ flatten_choices = function(
           choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_)
         )
 
-
       }
 
       choice_df = purrr::pmap_dfr(
@@ -511,7 +514,6 @@ flatten_choices = function(
         ),
         .f = get_column_choices
       )
-
 
 
     } else{
