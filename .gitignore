@@ -5,3 +5,5 @@
 .qualtreats.Rproj
 notes/*
 data/*
+in_progress/*
+in_progress/get_column_map.R
