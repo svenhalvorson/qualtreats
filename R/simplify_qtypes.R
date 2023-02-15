@@ -18,7 +18,7 @@
 #' Providing a flattened survey is offered just to save computational time.
 #' @return a \code{tibble}
 #' @export "simplify_qtypes"
-
+# TODO: make this algorithmic instead of referring to a table
 simplify_qtypes = function(survey_id, survey_flat){
 
   # objective is to return a data frame with these columns:
