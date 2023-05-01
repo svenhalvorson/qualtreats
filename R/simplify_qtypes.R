@@ -52,23 +52,38 @@ simplify_qtypes = function(survey_id, survey_flat){
     survey_flat = flatten_survey(survey_id)
   }
 
+  # Large case_when statement to figure this out:
   simplified_qtypes = survey_flat |>
     purrr::pluck('questions') |>
-    dplyr::left_join(
-      qtype_cross,
-      by = c(
-        "question_type",
-        "question_selector",
-        "question_subselector",
-        "column_type",
-        "column_selector",
-        "column_subselector"
+    dplyr::mutate(
+      question_style = dplyr::case_when(
+        question_selector %in% c('TB', 'GRB') ~ 'descriptive',
+        question_selector == 'Signature' ~ 'signature',
+        question_type == 'TE' | question_selector == 'TE' | column_selector == 'TE' ~ 'text',
+        # radio
+        question_selector %in% c('SAHR', 'SAVR', 'SACOL', 'DL', 'SB') ~ 'radio',
+        question_subselector %in% c('SingleAnswer', 'DL') ~ 'radio',
+        column_subselector %in% c('SingleAnswer', 'DL') ~ 'radio',
+        # checkbox
+        question_selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB') ~ 'checkbox',
+        question_subselector == 'MultipleAnswer' ~ 'checkbox',
+        column_subselector == 'MultipleAnswer' ~ 'checkbox',
+        TRUE ~ NA_character_
+      ),
+      question_matrix = dplyr::case_when(
+        is.na(question_type) ~ NA_integer_,
+        question_type %in% c('Matrix', 'SBS', 'DD') ~ 1L,
+        TRUE ~ 0L
+      ),
+      question_sbs = dplyr::case_when(
+        is.na(question_type) ~ NA_integer_,
+        question_type == 'SBS' ~ 1L,
+        question_selector == 'Profile' ~ 1L,
+        TRUE ~ 0L
       )
     ) |>
-    # note we're taking distinct here since the column numbers will be
-    # repeated for each subquestion. Want to be able to smothly join onto
-    # the flattened questions if that's desired.
-    dplyr::distinct(question_id, column_number, question_style, question_matrix, question_sbs)
+    dplyr::select(question_id, column_number, question_style, question_matrix, question_sbs)
+
 
   # Join loop and merge from the blocks table:
   looped_question_ids = survey_flat[['questions']] |>
@@ -81,7 +96,6 @@ simplify_qtypes = function(survey_id, survey_flat){
       question_id,
       question_loop = loop_and_merge
     )
-
 
   simplified_qtypes = dplyr::left_join(
       x = simplified_qtypes,
