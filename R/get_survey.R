@@ -42,8 +42,8 @@ get_survey = function(
     metadata = 'survey-definitions/{survey_id}/metadata'
   )
 
-  call_url = call_url %>%
-    paste0(call_suffix) %>%
+  call_url = call_url |>
+    paste0(call_suffix) |>
     stringr::str_glue(
       base_url = Sys.getenv('QUALTRICS_BASE_URL'),
       survey_id = survey_id
@@ -58,8 +58,8 @@ get_survey = function(
     verb = 'GET',
     url = call_url,
     httr::add_headers(headers)
-  ) %>%
-    httr::content() %>%
+  ) |>
+    httr::content() |>
     purrr::pluck('result')
 
   invisible(result)

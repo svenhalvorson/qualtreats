@@ -138,7 +138,7 @@ flatten_blocks = function(
       'ID',
       .default = NA_character_
     )
-  ) %>%
+  ) |>
     dplyr::distinct()
 
 
@@ -162,7 +162,7 @@ flatten_blocks = function(
       'Looping',
       .default = NA_character_
     )
-  ) %>%
+  ) |>
     dplyr::mutate(
       loop_and_merge = as.integer(!is.na(loop_and_merge)),
       dplyr::across(
@@ -171,8 +171,8 @@ flatten_blocks = function(
       )
     )
 
-  block_df = block_order %>%
-    dplyr::full_join(block_df, by = 'block_id') %>%
+  block_df = block_order |>
+    dplyr::full_join(block_df, by = 'block_id') |>
     dplyr::transmute(
       block_order = dplyr::row_number(),
       block_id,
@@ -236,7 +236,7 @@ flatten_question_block = function(
       'ID',
       .default = NA_character_
     )
-  ) %>%
+  ) |>
     dplyr::distinct()
 
   question_block_df = dplyr::full_join(
@@ -324,7 +324,7 @@ flatten_questions = function(
       subquestion_df = tibble::tibble(
         subq_order = as.integer(1:length(question[['ChoiceOrder']])),
         subq_number = purrr::map_int(question[['ChoiceOrder']], as.integer)
-      ) %>%
+      ) |>
         dplyr::left_join(
           y = subquestion_df,
           by = 'subq_number'
@@ -334,7 +334,7 @@ flatten_questions = function(
       subq_export_tags = question[['ChoiceDataExportTags']]
       if(is.list(subq_export_tags)){
 
-        subquestion_df = subquestion_df %>%
+        subquestion_df = subquestion_df |>
           dplyr::left_join(
             y = tibble::tibble(
               'subq_number' = as.integer(names(subq_export_tags)),
@@ -396,7 +396,7 @@ flatten_questions = function(
 
   # Sometimes there will be no matrix questions so:
   if(nrow(subquestion_df) > 0){
-    question_df = question_df %>%
+    question_df = question_df |>
       dplyr::left_join(
         subquestion_df ,
         by = 'question_id'
@@ -433,7 +433,7 @@ flatten_questions = function(
     column_type = character(0),
     column_selector = character(0),
     column_subselector = character(0)
-  ) %>%
+  ) |>
   dplyr::bind_rows(question_df)
 
   question_df
@@ -549,9 +549,9 @@ flatten_choices = function(
 
       # Choice analyze kept in another piece:
       if('AnalyzeChoices' %in% names(question)){
-        analyze_choices = question[['AnalyzeChoices']] %>%
-          purrr::keep(.p = function(x){x == 'No'}) %>%
-          names() %>%
+        analyze_choices = question[['AnalyzeChoices']] |>
+          purrr::keep(.p = function(x){x == 'No'}) |>
+          names() |>
           as.integer()
 
         choice_df[['choice_analyze']] = as.integer(!choice_df$choice %in% analyze_choices)
@@ -575,8 +575,8 @@ flatten_choices = function(
 
   # Reorder them based off the survey. It's a little redundant to call this
   # so many times but it doesn't really slow the whole thing down much:
-  choice_df = flatten_question_block(survey) %>%
-    dplyr::distinct(question_id) %>%
+  choice_df = flatten_question_block(survey) |>
+    dplyr::distinct(question_id) |>
     dplyr::inner_join(choice_df, by = 'question_id')
 
   # make sure we always have these columns:
@@ -590,7 +590,7 @@ flatten_choices = function(
     choice_description = character(0),
     choice_text_entry = integer(0),
     choice_analyze = integer(0)
-  ) %>%
+  ) |>
     dplyr::bind_rows(choice_df)
 
 }

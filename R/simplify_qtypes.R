@@ -52,8 +52,8 @@ simplify_qtypes = function(survey_id, survey_flat){
     survey_flat = flatten_survey(survey_id)
   }
 
-  simplified_qtypes = survey_flat %>%
-    purrr::pluck('questions') %>%
+  simplified_qtypes = survey_flat |>
+    purrr::pluck('questions') |>
     dplyr::left_join(
       qtype_cross,
       by = c(
@@ -64,19 +64,19 @@ simplify_qtypes = function(survey_id, survey_flat){
         "column_selector",
         "column_subselector"
       )
-    ) %>%
+    ) |>
     # note we're taking distinct here since the column numbers will be
     # repeated for each subquestion. Want to be able to smothly join onto
     # the flattened questions if that's desired.
     dplyr::distinct(question_id, column_number, question_style, question_matrix, question_sbs)
 
   # Join loop and merge from the blocks table:
-  looped_question_ids = survey_flat[['questions']] %>%
-    dplyr::distinct(question_id, block_id) %>%
+  looped_question_ids = survey_flat[['questions']] |>
+    dplyr::distinct(question_id, block_id) |>
     dplyr::left_join(
       y = survey_flat[['blocks']],
       by = 'block_id'
-    ) %>%
+    ) |>
     dplyr::transmute(
       question_id,
       question_loop = loop_and_merge
@@ -112,7 +112,7 @@ simplify_qtypes = function(survey_id, survey_flat){
 #
 #   qtype_cross = readr::read_csv(
 #     here::here('in_progress/in_progress_data/qtype_cross.csv')
-#   ) %>%
+#   ) |>
 #   mutate(
 #     across(
 #       all_of(c('question_matrix', 'question_sbs')),

@@ -65,7 +65,7 @@ get_column_map = function(
       trim_rows = FALSE,
       limit = 0
     )
-  ) %>%
+  ) |>
     dplyr::select(-(StartDate:UserLanguage))
 
   # Have to re-do it if file_format == 'spss' since it doesn't give metadata:
@@ -78,9 +78,9 @@ get_column_map = function(
         trim_rows = FALSE,
         limit = 0
       )
-    ) %>%
-      dplyr::select(-(StartDate:UserLanguage)) %>%
-      dplyr::slice(2) %>%
+    ) |>
+      dplyr::select(-(StartDate:UserLanguage)) |>
+      dplyr::slice(2) |>
       as.character()
 
     variable_label_exported = purrr::map_chr(
@@ -131,11 +131,11 @@ get_column_map = function(
 
   # The first thing I want to do is mark the loops. This is because
   # it's used as a prefix to the export tag
-  loop_question_ids = qtypes %>%
-    dplyr::filter(question_loop == 1L) %>%
+  loop_question_ids = qtypes |>
+    dplyr::filter(question_loop == 1L) |>
     dplyr::pull(question_id)
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       loop_number = dplyr::case_when(
         question_id %in% loop_question_ids ~ stringr::str_extract(
@@ -168,11 +168,11 @@ get_column_map = function(
 
   # We might be able to get away with recognizing pound signs
   # but let's try to not infer which questions are sbs:
-  sbs_question_ids = qtypes %>%
-    dplyr::filter(question_sbs == 1L) %>%
+  sbs_question_ids = qtypes |>
+    dplyr::filter(question_sbs == 1L) |>
     dplyr::pull(question_id)
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       column_number = dplyr::case_when(
         question_id %in% sbs_question_ids ~ stringr::str_extract(
@@ -195,9 +195,9 @@ get_column_map = function(
   # little check in case we don't understand this export schema as well as we think:
   if(
     any(
-      column_map %>%
-      dplyr::filter(embedded_data == 0) %>%
-      dplyr::pull(suffix) %>%
+      column_map |>
+      dplyr::filter(embedded_data == 0) |>
+      dplyr::pull(suffix) |>
       stringr::str_detect(
         pattern = '#'
       )
@@ -209,11 +209,11 @@ get_column_map = function(
 
   # SubQuestions ------------------------------------------------------------
 
-  matrix_question_ids = qtypes %>%
-    dplyr::filter(question_matrix == 1L) %>%
+  matrix_question_ids = qtypes |>
+    dplyr::filter(question_matrix == 1L) |>
     dplyr::pull(question_id)
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       subq_number = dplyr::case_when(
         question_id %in% matrix_question_ids ~ stringr::str_extract(
@@ -239,7 +239,7 @@ get_column_map = function(
   # last part! Think I'm content to just assume any leftover numbers
   # in the suffix are choices:
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       choice = stringr::str_extract(
         string = suffix,
@@ -259,7 +259,7 @@ get_column_map = function(
 
   # Now we need to join BOTH the choices and the choice_recodes because
   # for whatever reason Qualtrics exports both in differen circumstances:
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::left_join(
       dplyr::transmute(
         survey_flat[['choices']],
@@ -271,7 +271,7 @@ get_column_map = function(
       by = c('question_id', 'column_number', 'choice')
     )
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::left_join(
       dplyr::transmute(
         survey_flat[['choices']],
@@ -279,10 +279,10 @@ get_column_map = function(
         column_number,
         choice2 = choice,
         choice_recode
-      ) %>%
+      ) |>
         dplyr::filter(!is.na(choice_recode)),
       by = c('question_id', 'column_number', 'choice_recode')
-    ) %>%
+    ) |>
     dplyr::mutate(
       choice_recode = dplyr::coalesce(choice_recode, choice_recode2),
       choice = dplyr::coalesce(choice, choice2),
@@ -293,9 +293,9 @@ get_column_map = function(
   # Shouldn't be any numbers remaining as far as I know:
   if(
     any(
-      column_map %>%
-      dplyr::filter(embedded_data == 0) %>%
-      dplyr::pull(suffix) %>%
+      column_map |>
+      dplyr::filter(embedded_data == 0) |>
+      dplyr::pull(suffix) |>
       stringr::str_detect(
         pattern = '[0-9]'
       )
@@ -307,11 +307,11 @@ get_column_map = function(
 
   # Text entry --------------------------------------------------------------
 
-  text_question_ids = qtypes %>%
-    dplyr::filter(question_style == 'text') %>%
+  text_question_ids = qtypes |>
+    dplyr::filter(question_style == 'text') |>
     dplyr::pull(question_id)
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       text_entry = as.integer(
         stringr::str_detect(
@@ -328,7 +328,7 @@ get_column_map = function(
 
   # Export tags -------------------------------------------------------------
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::left_join(
       y = dplyr::select(
         survey_flat[['questions']],
@@ -346,7 +346,7 @@ get_column_map = function(
   # Nice suffix -------------------------------------------------------------
 
   # now we use all that data we extracted to make the coded suffix:
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       LP = dplyr::case_when(
         !is.na(loop_number) ~ paste0('_LP', pad2(loop_number)),
@@ -381,21 +381,21 @@ get_column_map = function(
   # Question names -------------------------------------------------------------
 
   # Now we're on to styling up our custom names:
-  question_names = survey_flat[['blocks']] %>%
-    dplyr::select(block_description, block_id) %>%
+  question_names = survey_flat[['blocks']] |>
+    dplyr::select(block_description, block_id) |>
     dplyr::left_join(
       y = dplyr::select(survey_flat[['questions']], question_id, block_id, question_type),
       by = 'block_id'
-    ) %>%
+    ) |>
     # Descriptive boxes aren't exported:
-    dplyr::filter(question_type != 'DB') %>%
+    dplyr::filter(question_type != 'DB') |>
     # repeats on column_number and subq_number mean we wanna grind this down:
-    dplyr::distinct(block_description, block_id, question_id) %>%
-    dplyr::group_by(block_id) %>%
+    dplyr::distinct(block_description, block_id, question_id) |>
+    dplyr::group_by(block_id) |>
     dplyr::mutate(
       question_num = pad2(dplyr::row_number())
-    ) %>%
-    dplyr::ungroup() %>%
+    ) |>
+    dplyr::ungroup() |>
     dplyr::transmute(
       question_name = paste0(
         block_description,
@@ -419,7 +419,7 @@ get_column_map = function(
   # in them but also have truncated text. Let's see if we can pretty them up
   # a bit:
 
-  var_labs_harmonized = survey_flat[['questions']] %>%
+  var_labs_harmonized = survey_flat[['questions']] |>
     dplyr::transmute(
       question_id,
       column_number,
@@ -430,7 +430,7 @@ get_column_map = function(
     )
 
   # Add to the columns exported:
-  var_labs_harmonized = column_map %>%
+  var_labs_harmonized = column_map |>
     dplyr::transmute(
       column_exported,
       question_id,
@@ -438,14 +438,14 @@ get_column_map = function(
       subq_number,
       choice_join = dplyr::coalesce(choice_recode, choice),
       text_entry
-    ) %>%
+    ) |>
     dplyr::left_join(
       y = var_labs_harmonized,
       by = c('question_id', 'column_number', 'subq_number')
-    ) %>%
+    ) |>
     # Let's set it so that the question description only shows for the
     # first entry within a question
-    dplyr::group_by(question_id) %>%
+    dplyr::group_by(question_id) |>
     dplyr::mutate(
       question_description = dplyr::case_when(
         dplyr::row_number() == 1 ~ question_description,
@@ -454,17 +454,17 @@ get_column_map = function(
     )
 
   # add choice descriptions and make the variable label:
-  var_labs_harmonized = survey_flat[['choices']] %>%
+  var_labs_harmonized = survey_flat[['choices']] |>
     dplyr::transmute(
       question_id,
       column_number,
       choice_description = format_description(choice_description),
       choice_join = dplyr::coalesce(choice_recode, choice)
-    ) %>%
+    ) |>
     dplyr::right_join(
       y = var_labs_harmonized,
       by = c('question_id', 'column_number', 'choice_join')
-    ) %>%
+    ) |>
     dplyr::mutate(
       text_suffix = ifelse(
         text_entry == 1,
@@ -494,7 +494,7 @@ get_column_map = function(
       )
     )
 
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::left_join(
       y = dplyr::select(
         var_labs_harmonized,
@@ -507,7 +507,7 @@ get_column_map = function(
   # Clean up ----------------------------------------------------------------
 
   # now we just attach the question name and suffix
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::transmute(
       column_exported,
       column_harmonized = paste0(question_name, suffix),
@@ -532,7 +532,7 @@ get_column_map = function(
 
   # Don't think we want to have any values for the embedded data value except
   # column_exported, import_id, and embedded_data:
-  column_map = column_map %>%
+  column_map = column_map |>
     dplyr::mutate(
       dplyr::across(
         .cols = -c('column_exported', 'import_id', 'embedded_data'),

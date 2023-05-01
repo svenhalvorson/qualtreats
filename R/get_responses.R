@@ -60,10 +60,10 @@ get_responses = function(
   if(!is.null(limit)){
     payload[['limit']] = limit
   }
-  payload = payload %>%
+  payload = payload |>
     purrr::map(
       function(x){if(length(x) == 1) jsonlite::unbox(x) else x}
-    ) %>%
+    ) |>
     jsonlite::toJSON(auto_unbox = FALSE)
 
   # Next we make the request from qualtrics:
@@ -72,7 +72,7 @@ get_responses = function(
     url = download_url,
     httr::add_headers(headers),
     body = payload
-  ) %>%
+  ) |>
     httr::content()
 
   request_id = result[['result']][['progressId']]
@@ -98,7 +98,7 @@ get_responses = function(
       url = check_url,
       httr::add_headers(headers),
       body = NULL
-    ) %>%
+    ) |>
       httr::content()
 
     # Set progress
