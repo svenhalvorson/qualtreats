@@ -1,10 +1,10 @@
 Package: qualtreats
 Type: Package
-Title: Process, organize, and display data from Qualtrics
+Title: Get data on Qualtrics surveys from the API
 Version: 0.0.0.9000
 Authors@R: 
   person("Sven", "Halvorson", , "svenpubmail@gmail.com", role = c("aut", "cre"))
-Description: We'll describe it better when we know exactly what it does
+Description: Creates formatted versions of JSON data from the Qualtrics API.
 License: `use_mit_license()`
 Encoding: UTF-8
 LazyData: true
