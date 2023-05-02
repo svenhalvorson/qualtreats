@@ -46,7 +46,7 @@ rename_dict = function(
       is.data.frame(df),
       is.character(old_names) & is.vector(old_names),
       is.character(new_names) & is.vector(new_names),
-      length(old_names) != length(new_names)
+      length(old_names) == length(new_names)
     )
   )
 
