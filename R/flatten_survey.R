@@ -287,13 +287,6 @@ flatten_questions = function(
     }
   )
 
-  # TODO: decide if we care that this doesn't work:
-  if(
-    length(purrr::keep(matrix_questions, function(x){x[['Selector']] == 'Profile'})) > 0
-  ){
-    warning('Choices not implemented correctly for profile questions')
-  }
-
   if(length(matrix_questions) > 0){
     get_subquestions = function(question_id){
 
@@ -301,7 +294,13 @@ flatten_questions = function(
       subquestions = question[['Choices']]
 
       # Safegaurd against zero length empty matrix:
-      if(length(subquestions) == 0){
+      if(
+        any(
+          length(subquestions) == 0,
+          # Treating these like sbs that have no subquestions:
+          question[['Selector']] == 'Profile'
+        )
+      ){
         return(tibble::tibble(question_id = character(0)))
       }
 
@@ -394,6 +393,60 @@ flatten_questions = function(
 
   }
 
+  # Dumb ole profile questions:
+  profile_questions = purrr::keep(
+    .x = questions,
+    .p = function(x){
+      x[['Selector']] == 'Profile'
+    }
+  )
+
+  if(length(profile_questions) > 0){
+    get_profile_columns = function(question_id){
+
+      profile_question = profile_questions[[question_id]]
+      profile_columns = profile_question[['Choices']]
+
+      profile_order = tibble::tibble(
+        column_number = as.integer(profile_question[['AnswerOrder']])
+      )
+
+      profile_df = tibble::tibble(
+        question_id = question_id,
+        column_number = as.integer(names(profile_columns)),
+        column_description = purrr::map_chr(profile_question[['Choices']], purrr::pluck, 'Display', .default = NA_character_)
+      )
+
+      if(is.list(profile_question[['ChoiceDataExportTags']])){
+        profile_df[['column_export_tag']] = unlist(profile_question[['ChoiceDataExportTags']])
+      }
+
+      # Do this to order them correctly:
+      dplyr::left_join(
+        x = tibble::tibble(
+          column_number = as.integer(profile_question[['ChoiceOrder']])
+        ),
+        y = profile_df,
+        by = c('column_number')
+      )
+
+    }
+
+    profile_df = purrr::map_dfr(
+      .x = names(profile_questions),
+      .f = get_profile_columns
+    )
+
+    # Profile questions may or may not occur at the same time as matrix/sbs
+    # so do this:
+    if(nrow(subquestion_df) > 0){
+      subquestion_df = dplyr::bind_rows(subquestion_df, profile_df)
+    } else{
+      subquestion_df = profile_df
+    }
+
+  }
+
   # Sometimes there will be no matrix questions so:
   if(nrow(subquestion_df) > 0){
     question_df = question_df |>
@@ -454,7 +507,7 @@ flatten_choices = function(
 
   # So what I had written previously was a bit convoluted. Feel like I
   # just need to write one function that takes in a question, and
-  # givs back the associated data frame for that. Should have these columns:
+  # gives back the associated data frame for that. Should have these columns:
   # tibble::tribble(
   #   ~question_id,
   #   ~column_number,
@@ -473,7 +526,7 @@ flatten_choices = function(
     # for whatever reason the rows are called choices in matrix
     corder = dplyr::case_when(
       qtype %in% c('Matrix', 'SBS') ~ 'AnswerOrder',
-      qtype == 'DD' ~ 'Answers',
+      qtype %in% 'DD' ~ 'Answers',
       TRUE ~ 'ChoiceOrder'
     )
 
@@ -515,6 +568,39 @@ flatten_choices = function(
         .f = get_column_choices
       )
 
+    # stupid profile questions:
+    } else if(question[['Selector']] == 'Profile'){
+
+      get_profile_choices = function(column_number){
+
+        column_choices = question[['Answers']][[column_number]]
+
+        profile_column_df = tibble::tibble(
+          question_id = question[['QuestionID']],
+          column_number = as.integer(column_number),
+          choice_order = as.integer(names(column_choices)),
+          choice = as.integer(names(column_choices)),
+          choice_recode = NA_integer_,
+          choice_description = purrr::map_chr(.x = column_choices, .f = purrr::pluck, 'Display', .default = NA_character_),
+          # The columns have text entry
+          choice_text_entry = 0L,
+          choice_analyze = 1L
+        )
+
+        # Couldn't think of an an elegant way to do this within the tibble statement
+        if('RecodeValues' %in% names(question)){
+          profile_column_df[['choice_recode']] = as.integer(unlist(question[['RecodeValues']]))
+        }
+
+        profile_column_df
+
+      }
+
+      choice_df = purrr::map_dfr(
+        .x = names(question[['Answers']]),
+        .f = get_profile_choices
+      ) |>
+        dplyr::filter(choice_description != '&nbsp;')
 
     } else{
 
