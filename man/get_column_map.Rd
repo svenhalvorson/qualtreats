@@ -38,7 +38,9 @@ renaming conventions (ex: \code{column_harmonized}). The columns return have the
  \item \code{suffix}: suffix created by question characteristics
  \item \code{loop_number}: loop number from "loop and merge" questions
  \item \code{column_number}: column within side-by-side questions
- \item \code{subq_number}: sub-question number within matrix or side-by-side questions
+ \item \code{subq_number}: internal id of that sub-question
+ \item \code{subq_order}: sub-question order within matrix or side-by-side questions.
+ Note that this is different from \code{subq_number}
  \item \code{choice}: internal choice number from multiple choice questions
  \item \code{choice_recode}: choice recode value
  \item \code{text_entry}: binary representation of whether the choice

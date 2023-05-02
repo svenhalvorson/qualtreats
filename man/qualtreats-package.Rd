@@ -4,9 +4,9 @@
 \name{qualtreats-package}
 \alias{qualtreats}
 \alias{qualtreats-package}
-\title{qualtreats: Process, organize, and display data from Qualtrics}
+\title{qualtreats: Get data on Qualtrics surveys from the API}
 \description{
-We'll describe it better when we know exactly what it does
+Creates formatted versions of JSON data from the Qualtrics API.
 }
 \author{
 \strong{Maintainer}: Sven Halvorson \email{svenpubmail@gmail.com}

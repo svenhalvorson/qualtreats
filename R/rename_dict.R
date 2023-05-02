@@ -41,16 +41,14 @@ rename_dict = function(
   match_all = TRUE
 ){
 
-  if(
-    any(
-      !is.data.frame(df),
-      !is.character(old_names),
-      !is.character(new_names),
+  stopifnot(
+    all(
+      is.data.frame(df),
+      is.character(old_names) & is.vector(old_names),
+      is.character(new_names) & is.vector(new_names),
       length(old_names) != length(new_names)
     )
-  ){
-    stop('Unacceptable arguments supplied') # This is vague but for now, whatever
-  }
+  )
 
   # Might be important sometimes that we assert that everything in the
   # dictionary matches a column name in df

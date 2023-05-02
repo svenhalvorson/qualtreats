@@ -2,21 +2,24 @@
 % Please edit documentation in R/var_lab_dict.R
 \name{var_lab_dict}
 \alias{var_lab_dict}
-\title{Apply variable names}
+\title{Apply variable labels}
 \usage{
-var_lab_dict(df, column_names, var_labs)
+var_lab_dict(df, column_names, var_labs, match_all = TRUE)
 }
 \arguments{
 \item{df}{A data frame}
 
-\item{column_names}{character vector of column names in \code{df}}
+\item{column_names}{Character vector of column names in \code{df}}
 
-\item{var_labs}{corresponding character vector of variable labels}
+\item{var_labs}{Corresponding character vector of variable labels}
+
+\item{match_all}{Do all of \code{column_names} need to be in the columns of \code{df}?}
 }
 \value{
-a data frame
+\code{df} with modified attributes
 }
 \description{
-Dictionary style application of variable names
-using \code{haven::labelled}
+Dictionary style application of variable labels. Sets the "label"
+\code{attribute} of eacj \code{column_names} within \code{df} to the corresponding
+values within \code{var_labs}.
 }
