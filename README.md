@@ -1,11 +1,11 @@
 
 # qualtreats
 
-Qualtreats is a library that allows you to easily use data about
-Qualtrics surveys extracted from the API. You can generate tables that
-describe the questions, blocks, choices, and exported columns of a
-survey. This is particularly useful for checking that the survey is
-configured correctly or comparing surveys.
+Qualtreats is a library that can retrieve data about Qualtrics surveys
+extracted from the API. You can generate tables that describe the
+questions, blocks, choices, and exported columns of a survey. This is
+particularly useful for checking that the survey is configured correctly
+or comparing surveys.
 
 Install it like this:
 
@@ -14,19 +14,19 @@ devtools::install_github('svenhalvorson/qualtreats')
 ```
 
 These two environment variables (should be accessible by `Sys.getenv`)
-need to be set in the same way that the [qualtRics
-library](https://github.com/ropensci/qualtRics) uses them:
+need to be set in the same way that the
+[qualtRics](https://github.com/ropensci/qualtRics) library uses them:
 
-1.  `QUALTRICS_API_KEY` = ‘your_api_key’
-2.  `QUALTRICS_BASE_URL` = ‘oregon.ca1.qualtrics.com’ (depends on
+1.  `QUALTRICS_API_KEY`: ‘your_api_key’
+2.  `QUALTRICS_BASE_URL`: ‘oregon.ca1.qualtrics.com’ (depends on
     organization)
 
 ### Flatten a survey
 
 The function `flatten_survey` creates a semi-curated version of the
 survey definitions from [this API
-call](https://api.qualtrics.com/9d0928392673d-get-survey). Set a survey
-ID and flatten the survey into three tables:
+call](https://api.qualtrics.com/9d0928392673d-get-survey). Use a survey
+ID (can be found in the URL) to flatten the survey into three tables:
 
 ``` r
 survey_id = 'SV_bg4hf9VdW9CwmiO'
@@ -77,8 +77,8 @@ still useful).
 The next function, `simplify_qtypes`, makes a list of all the questions
 and assigns some flags to them. It will tell you if a question is a
 matrix, side-by-side (sbs), or is part of a loop-and-merge. It
-characterizes the question attributes in the column `question_style`.
-This can accept either the `survey_id` or a flattened survey (faster).
+categorizes the questions by `question_style`. This can accept either
+the `survey_id` or a flattened survey (faster).
 
 ``` r
 survey_qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
