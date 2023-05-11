@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-*Huge thank you to authors of [qualtRics](https://github.com/ropensci/qualtRics). Appreciate teaching a bit about `httr`*
+*Huge thank you to authors of [qualtRics](https://github.com/ropensci/qualtRics). Appreciate learn/steal-ing your `httr` code*
 
 Qualtreats is a library that can retrieve data about Qualtrics surveys
 extracted from the API. You can generate tables that describe the questions,
@@ -28,11 +28,11 @@ Install it like this:
 devtools::install_github('svenhalvorson/qualtreats')
 ```
 
-These two environment variables (should be accessible by `Sys.getenv`) need
-to be set in the same way that the [qualtRics](https://github.com/ropensci/qualtRics) library uses them:
+These two environment variables (should be accessible by `Sys.getenv`) need to be set in the same way that the [qualtRics](https://github.com/ropensci/qualtRics) library uses them:
 
 1. `QUALTRICS_API_KEY`: 'your_api_key'
 2. `QUALTRICS_BASE_URL`: 'oregon.ca1.qualtrics.com' (depends on organization)
+
 
 ### Flatten a survey  
 The function `flatten_survey` creates a semi-curated version of the survey definitions from [this API call](https://api.qualtrics.com/9d0928392673d-get-survey). Use a survey ID (can be found in the URL) to flatten the survey into three tables:

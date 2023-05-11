@@ -2,8 +2,8 @@
 # qualtreats
 
 *Huge thank you to authors of
-[qualtRics](https://github.com/ropensci/qualtRics). Appreciate teaching
-a bit about `httr`*
+[qualtRics](https://github.com/ropensci/qualtRics). Appreciate
+learn/stealing your `httr` code*
 
 Qualtreats is a library that can retrieve data about Qualtrics surveys
 extracted from the API. You can generate tables that describe the
