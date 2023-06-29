@@ -77,7 +77,7 @@ flatten_survey = function(
       dplyr::mutate(
         .data = x,
         dplyr::across(
-          .cols = everything(),
+          .cols = tidyselect::everything(),
           .fns = unname
         )
       )
@@ -166,7 +166,7 @@ flatten_blocks = function(
     dplyr::mutate(
       loop_and_merge = as.integer(!is.na(loop_and_merge)),
       dplyr::across(
-        .cols = everything(),
+        .cols = tidyselect::everything(),
         .fns = unname
       )
     )

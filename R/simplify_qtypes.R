@@ -13,7 +13,7 @@
 #'   has the "loop and merge" feature enabled.
 #' }
 #' @param survey_id string of the survey id, begins with 'SV_'
-#' @param survey_flat the result of \code{qualtreats::flatten_survey}
+#' @param survey_flat the result of \code{qualtables::flatten_survey}
 #' @note Only one of \code{survey_id} or \code{survey_flat} is necessary.
 #' Providing a flattened survey is offered just to save computational time.
 #' @return a \code{tibble}

@@ -1,4 +1,4 @@
 library(testthat)
-library(qualtreats)
+library(qualtables)
 
-test_check("qualtreats")
+test_check("qualtables")

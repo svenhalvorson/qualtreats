@@ -1,23 +1,22 @@
-Package: qualtreats
+Package: qualtables
 Type: Package
-Title: Get data on Qualtrics surveys from the API
-Version: 0.0.0.9000
+Title: Create tables of a Qualtrics surveys from the API
+Version: 0.0.0.9001
 Authors@R: 
   person("Sven", "Halvorson", , "svenpubmail@gmail.com", role = c("aut", "cre"))
 Description: Creates formatted versions of JSON data from the Qualtrics API.
 License: `use_mit_license()`
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.2.2
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Imports: 
     dplyr,
+    tidyselect,
     haven,
     httr,
     jsonlite,
-    magrittr,
     purrr,
     readr,
     rlang,

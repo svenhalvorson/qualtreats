@@ -27,7 +27,7 @@
 #'  allows text entry. Note that this comes from the \code{import_id}, not whether
 #'  the column literally contains text entry data.
 #' }
-#' @note Uses \code{qualtreats::get_responses} to fetch the exported header.
+#' @note Uses \code{qualtables::get_responses} to fetch the exported header.
 #' @param survey_id string of the survey id, begins with 'SV_'
 #' @param file_format one of \code{c('spss', 'csv', 'tsv')}
 #' @return a \code{tibble} containing information about the columns exported
@@ -51,15 +51,15 @@ get_column_map = function(
   file_format = rlang::arg_match(file_format)
 
   # Flatten the survey, get the simplified question types:
-  survey_flat = qualtreats::flatten_survey(survey_id)
-  qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
+  survey_flat = qualtables::flatten_survey(survey_id)
+  qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
 
 
   # Get exported columns ----------------------------------------------------
 
   # Get the exported column names and associated columns:
   exported_columns = suppressMessages(
-    qualtreats::get_responses(
+    qualtables::get_responses(
       survey_id = survey_id,
       file_format = file_format,
       trim_rows = FALSE,
@@ -72,7 +72,7 @@ get_column_map = function(
   if(file_format == 'spss'){
 
     exported_metadata = suppressMessages(
-      qualtreats::get_responses(
+      qualtables::get_responses(
         survey_id = survey_id,
         file_format = 'csv',
         trim_rows = FALSE,
