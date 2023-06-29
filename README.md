@@ -1,11 +1,14 @@
 
-# qualtreats
+# qualtables
+
+This is still under development. If you find bugs or wish to
+collaborate, please contact me at <svenpubmail@gmail.com>
 
 *Huge thank you to authors of
 [qualtRics](https://github.com/ropensci/qualtRics). Appreciate
-learn/stealing your `httr` code*
+learn/steal-ing your `httr` code*
 
-Qualtreats is a library that can retrieve data about Qualtrics surveys
+`qualtables` is a library that can retrieve data about Qualtrics surveys
 extracted from the API. You can generate tables that describe the
 questions, blocks, choices, and exported columns of a survey. This is
 particularly useful for checking that the survey is configured correctly
@@ -14,7 +17,7 @@ or comparing surveys.
 Install it like this:
 
 ``` r
-devtools::install_github('svenhalvorson/qualtreats')
+devtools::install_github('svenhalvorson/qualtables')
 ```
 
 These two environment variables (should be accessible by `Sys.getenv`)
@@ -35,7 +38,7 @@ ID (can be found in the URL) to flatten the survey into three tables:
 ``` r
 survey_id = 'SV_bg4hf9VdW9CwmiO'
 
-survey_flat = qualtreats::flatten_survey(survey_id)
+survey_flat = qualtables::flatten_survey(survey_id)
 ```
 
 Here are *a few* of the columns in the questions table:
@@ -85,7 +88,7 @@ categorizes the questions by `question_style`. This can accept either
 the `survey_id` or a flattened survey (faster).
 
 ``` r
-survey_qtypes = qualtreats::simplify_qtypes(survey_flat = survey_flat)
+survey_qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
 head(survey_qtypes)
 #> # A tibble: 6 × 6
 #>   question_id column_number question_style question_matrix question_sbs questi…¹
@@ -106,7 +109,7 @@ associations between what Qualtrics exports and the question attributes.
 Here we call `get_column_map`:
 
 ``` r
-column_map = qualtreats::get_column_map(survey_id)
+column_map = qualtables::get_column_map(survey_id)
 
 column_map |>
   dplyr::select(column_exported, column_harmonized, choice, question_id) |>
@@ -126,21 +129,21 @@ The first column of this data frame is the columns of the data set that
 qualtrics gives when responses are exported. Some of the variables are
 attributes of that column such as the associated `choice`,
 `subq_number`, and `column_number`. Other variables, like
-`column_harmonized` & `question_name`, are ones qualtreats generates. I
+`column_harmonized` & `question_name`, are ones qualtables generates. I
 tried to make some question names and suffixes that could be used if you
 do not want to define them yourself. You an use the “dictionary style”
 renaming and label functions:
 
 ``` r
-responses = qualtreats::get_responses(survey_id)
+responses = qualtables::get_responses(survey_id)
 
-responses = qualtreats::rename_dict(
+responses = qualtables::rename_dict(
   df = responses,
   old_names = column_map[['column_exported']],
   new_names = column_map[['column_harmonized']]
 )
 
-responses = qualtreats::var_lab_dict(
+responses = qualtables::var_lab_dict(
   df = responses,
   column_names = column_map[['column_harmonized']],
   var_labs = column_map[['variable_label']]
