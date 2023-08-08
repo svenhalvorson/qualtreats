@@ -82,7 +82,8 @@ simplify_qtypes = function(survey_id, survey_flat){
         TRUE ~ 0L
       )
     ) |>
-    dplyr::select(question_id, column_number, question_style, question_matrix, question_sbs)
+    dplyr::select(question_id, column_number, question_style, question_matrix, question_sbs) |>
+    dplyr::distinct(question_id, column_number, .keep_all = TRUE) # We don't need repeated rows of matrices
 
 
   # Join loop and merge from the blocks table:
@@ -120,22 +121,3 @@ simplify_qtypes = function(survey_id, survey_flat){
   simplified_qtypes
 
 }
-
-# TODO: delete this eventually when we're satisfied with the mapping:
-# update_qtype_cross = function(){
-#
-#   qtype_cross = readr::read_csv(
-#     here::here('in_progress/in_progress_data/qtype_cross.csv')
-#   ) |>
-#   mutate(
-#     across(
-#       all_of(c('question_matrix', 'question_sbs')),
-#       as.integer
-#     )
-#   )
-#
-#   usethis::use_data(qtype_cross, internal = TRUE, overwrite = TRUE)
-#
-#   invisible(NULL)
-#
-# }
