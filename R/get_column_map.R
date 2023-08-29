@@ -385,7 +385,8 @@ get_column_map = function(
     dplyr::select(block_description, block_id) |>
     dplyr::left_join(
       y = dplyr::select(survey_flat[['questions']], question_id, block_id, question_type),
-      by = 'block_id'
+      by = 'block_id',
+      relationship = 'one-to-many'
     ) |>
     # Descriptive boxes aren't exported:
     dplyr::filter(question_type != 'DB') |>
@@ -436,6 +437,7 @@ get_column_map = function(
       question_id,
       column_number,
       subq_number,
+      loop_number,
       choice_join = dplyr::coalesce(choice_recode, choice),
       text_entry
     ) |>
@@ -445,7 +447,7 @@ get_column_map = function(
     ) |>
     # Let's set it so that the question description only shows for the
     # first entry within a question
-    dplyr::group_by(question_id) |>
+    dplyr::group_by(question_id, loop_number) |>
     dplyr::mutate(
       question_description = dplyr::case_when(
         dplyr::row_number() == 1 ~ question_description,
