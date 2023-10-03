@@ -48,12 +48,12 @@ get_column_map = function(
       valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
     )
   )
+
   file_format = rlang::arg_match(file_format)
 
   # Flatten the survey, get the simplified question types:
   survey_flat = qualtables::flatten_survey(survey_id)
   qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
-
 
   # Get exported columns ----------------------------------------------------
 
@@ -172,9 +172,19 @@ get_column_map = function(
     dplyr::filter(question_sbs == 1L) |>
     dplyr::pull(question_id)
 
+  # Add in the profiles since they act like a sbs
+  profile_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(question_selector == 'Profile') |>
+    dplyr::pull(question_id)
+
   column_map = column_map |>
     dplyr::mutate(
       column_number = dplyr::case_when(
+        question_id %in% profile_question_ids ~ stringr::str_extract(
+          string = suffix,
+          pattern = '[0-9]+'
+        ),
         question_id %in% sbs_question_ids ~ stringr::str_extract(
           string = suffix,
           pattern = '^#[0-9]+_'
@@ -555,8 +565,13 @@ get_column_map = function(
 
   # Check -------------------------------------------------------------------
 
-  if(nrow(column_map) != column_map_nrow){
-    stop('number of rows in column_map is off!')
+  if(
+    any(
+      nrow(column_map) != column_map_nrow,
+      length(column_map$column_harmonized) != length(unique(column_map$column_harmonized))
+    )
+  ){
+    stop('problem in creating column map!')
   }
 
   column_map
