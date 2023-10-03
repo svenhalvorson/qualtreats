@@ -57,6 +57,7 @@ simplify_qtypes = function(survey_id, survey_flat){
     purrr::pluck('questions') |>
     dplyr::mutate(
       question_style = dplyr::case_when(
+        question_type == 'Captcha' ~ 'captcha',
         question_selector %in% c('TB', 'GRB') ~ 'descriptive',
         question_selector == 'Signature' ~ 'signature',
         question_type == 'TE' | question_selector == 'TE' | column_selector == 'TE' ~ 'text',
