@@ -5,7 +5,7 @@ Version: 0.0.0.9001
 Authors@R: 
   person("Sven", "Halvorson", , "svenpubmail@gmail.com", role = c("aut", "cre"))
 Description: Creates formatted versions of JSON data from the Qualtrics API.
-License: `use_mit_license()`
+License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.2
 Suggests: 

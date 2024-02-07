@@ -172,7 +172,10 @@ flatten_blocks = function(
     )
 
   block_df = block_order |>
-    dplyr::full_join(block_df, by = 'block_id') |>
+    dplyr::full_join(
+      block_df,
+      by = 'block_id'
+    ) |>
     dplyr::transmute(
       block_order = dplyr::row_number(),
       block_id,
