@@ -7,6 +7,7 @@
 #' @param variable_labels Should variable labels (from \code{expss}) be applied/retained?
 #' @param exportResponsesInProgress Should incomplete responses be exported instead?
 #' @param limit Maximum number of responses to export.
+#' @param zap_empty Should \code{haven::zap_empty} be applied to all character columns?
 #' @return a \code{tibble} of the responses
 #' @details Note that value labels are returned when \code{file_format = 'spss'} only.
 #' @export
@@ -21,7 +22,8 @@ get_responses = function(
   useLabels = FALSE,
   variable_labels = TRUE,
   exportResponsesInProgress = FALSE,
-  limit = NULL
+  limit = NULL,
+  zap_empty = TRUE
 ){
 
   # Argument checks:
@@ -175,10 +177,16 @@ get_responses = function(
     }
   }
 
+  if(zap_empty){
+    responses = dplyr::mutate(
+      .data = responses,
+      dplyr::across(
+        .cols = tidyselect::where(is.character),
+        .fns = haven::zap_empty
+      )
+    )
+  }
 
-  # Note that this is a bit weird looking but we have to accomodate the case
-  # of file_format == 'spss' & variable_labels == FALSE which is unlikely
-  # but I suppose someone might want that.
 
   invisible(responses)
 
