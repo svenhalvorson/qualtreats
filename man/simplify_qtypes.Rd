@@ -9,7 +9,7 @@ simplify_qtypes(survey_id, survey_flat)
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
 
-\item{survey_flat}{the result of \code{qualtreats::flatten_survey}}
+\item{survey_flat}{the result of \code{qualtables::flatten_survey}}
 }
 \value{
 a \code{tibble}

@@ -48,15 +48,14 @@ survey_flat[['questions']] |>
   dplyr::select(question_id, question_description, question_type, question_selector) |>
   head()
 #> # A tibble: 6 × 4
-#>   question_id question_description                               quest…¹ quest…²
-#>   <chr>       <chr>                                              <chr>   <chr>  
-#> 1 QID8        "Thanks for using a Qualtrics Survey Template! To… DB      TB     
-#> 2 QID1        "What is your gender?"                             MC      SAVR   
-#> 3 QID2        "What is your age?"                                MC      SAVR   
-#> 4 QID3        "Are you of Hispanic, Latino, or Spanish origin? " MC      SAVR   
-#> 5 QID4        "How would you describe yourself? Please select a… MC      MAVR   
-#> 6 QID5        "What is the highest degree or level of school yo… MC      SAVR   
-#> # … with abbreviated variable names ¹​question_type, ²​question_selector
+#>   question_id question_description               question_type question_selector
+#>   <chr>       <chr>                              <chr>         <chr>            
+#> 1 QID8        "Thanks for using a Qualtrics Sur… DB            TB               
+#> 2 QID1        "What is your gender?"             MC            SAVR             
+#> 3 QID2        "What is your age?"                MC            SAVR             
+#> 4 QID3        "Are you of Hispanic, Latino, or … MC            SAVR             
+#> 5 QID4        "How would you describe yourself?… MC            MAVR             
+#> 6 QID5        "What is the highest degree or le… MC            SAVR
 ```
 
 And the choices table:
@@ -64,16 +63,15 @@ And the choices table:
 ``` r
 head(survey_flat[['choices']])
 #> # A tibble: 6 × 8
-#>   question_id column_number choice_order choice choice…¹ choic…² choic…³ choic…⁴
-#>   <chr>               <int>        <int>  <int>    <int> <chr>     <int>   <int>
-#> 1 QID1                   NA            1      1       NA Male          0       1
-#> 2 QID1                   NA            2      2       NA Female        0       1
-#> 3 QID1                   NA            3      3       NA Other         0       1
-#> 4 QID2                   NA            1      1       NA Under …       0       1
-#> 5 QID2                   NA            2      2       NA 18 - 24       0       1
-#> 6 QID2                   NA            3      3       NA 25 - 34       0       1
-#> # … with abbreviated variable names ¹​choice_recode, ²​choice_description,
-#> #   ³​choice_text_entry, ⁴​choice_analyze
+#>   question_id column_number choice_order choice choice_recode choice_description
+#>   <chr>               <int>        <int>  <int>         <int> <chr>             
+#> 1 QID1                   NA            1      1            NA Male              
+#> 2 QID1                   NA            2      2            NA Female            
+#> 3 QID1                   NA            3      3            NA Other             
+#> 4 QID2                   NA            1      1            NA Under 18          
+#> 5 QID2                   NA            2      2            NA 18 - 24           
+#> 6 QID2                   NA            3      3            NA 25 - 34           
+#> # ℹ 2 more variables: choice_text_entry <int>, choice_analyze <int>
 ```
 
 There is also a blocks table which is typically less interesting (but
@@ -91,15 +89,15 @@ the `survey_id` or a flattened survey (faster).
 survey_qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
 head(survey_qtypes)
 #> # A tibble: 6 × 6
-#>   question_id column_number question_style question_matrix question_sbs questi…¹
-#>   <chr>               <int> <chr>                    <int>        <int>    <int>
-#> 1 QID8                   NA descriptive                  0            0        0
-#> 2 QID1                   NA radio                        0            0        0
-#> 3 QID2                   NA radio                        0            0        0
-#> 4 QID3                   NA radio                        0            0        0
-#> 5 QID4                   NA checkbox                     0            0        0
-#> 6 QID5                   NA radio                        0            0        0
-#> # … with abbreviated variable name ¹​question_loop
+#>   question_id column_number question_style question_matrix question_sbs
+#>   <chr>               <int> <chr>                    <int>        <int>
+#> 1 QID8                   NA descriptive                  0            0
+#> 2 QID1                   NA radio                        0            0
+#> 3 QID2                   NA radio                        0            0
+#> 4 QID3                   NA radio                        0            0
+#> 5 QID4                   NA checkbox                     0            0
+#> 6 QID5                   NA radio                        0            0
+#> # ℹ 1 more variable: question_loop <int>
 ```
 
 ### Get a column map

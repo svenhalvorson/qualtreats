@@ -12,7 +12,8 @@ get_responses(
   useLabels = FALSE,
   variable_labels = TRUE,
   exportResponsesInProgress = FALSE,
-  limit = NULL
+  limit = NULL,
+  zap_empty = TRUE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ get_responses(
 \item{exportResponsesInProgress}{Should incomplete responses be exported instead?}
 
 \item{limit}{Maximum number of responses to export.}
+
+\item{zap_empty}{Should \code{haven::zap_empty} be applied to all character columns?}
 }
 \value{
 a \code{tibble} of the responses
