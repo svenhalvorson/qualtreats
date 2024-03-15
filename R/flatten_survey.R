@@ -684,4 +684,3 @@ flatten_choices = function(
 
 }
 
-
