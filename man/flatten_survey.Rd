@@ -6,7 +6,6 @@
 \usage{
 flatten_survey(
   survey_id,
-  out_dir = NULL,
   file_prefix = "",
   file_format = c("csv", "tsv"),
   drop_trash = TRUE
@@ -14,8 +13,6 @@ flatten_survey(
 }
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
-
-\item{out_dir}{path to directory where files can be written}
 
 \item{file_prefix}{string prefix to file names to be written}
 

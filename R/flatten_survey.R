@@ -2,7 +2,6 @@
 #' @description Decompose the blocks, questions, and choices of a
 #' Qualtrics survey into rectangular data sets.
 #' @param survey_id string of the survey id, begins with 'SV_'
-#' @param out_dir path to directory where files can be written
 #' @param file_prefix string prefix to file names to be written
 #' @param file_format one of \code{c('csv', 'tsv')}
 #' @param drop_trash Should questions in the trash bin be discarded?
@@ -12,7 +11,6 @@
 
 flatten_survey = function(
   survey_id,
-  out_dir = NULL,
   file_prefix = '',
   file_format = c('csv', 'tsv'),
   drop_trash = TRUE
@@ -23,7 +21,6 @@ flatten_survey = function(
       valid_survey_id(survey_id),
       valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
       valid_base_url(Sys.getenv('QUALTRICS_BASE_URL')),
-      is.null(out_dir) || dir.exists(out_dir),
       is.character(file_prefix) & length(file_prefix) == 1
     )
   )
@@ -83,43 +80,6 @@ flatten_survey = function(
       )
     }
   )
-
-
-  # If we want to write:
-  if(!is.null(out_dir)){
-
-    # Write the results based off their chosen file format, directory, and prefix
-    write_fun = ifelse(
-      test = file_format == 'tsv',
-      readr::write_tsv,
-      readr::write_csv
-    )
-
-    if(!stringr::str_detect(out_dir, '/$')){
-      out_dir = paste0(out_dir, '/')
-    }
-
-    file_names = paste0(
-      file_prefix,
-      ifelse(
-        file_prefix == '',
-        '',
-        '_'
-      ),
-      tables,
-      '.',
-      file_format
-    )
-
-    file_paths = paste0(out_dir, file_names)
-
-    purrr::walk2(
-      .x = results,
-      .y = file_paths,
-      .f = write_fun
-    )
-
-  }
 
   invisible(results)
 
