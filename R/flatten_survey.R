@@ -81,6 +81,8 @@ flatten_survey = function(
     }
   )
 
+
+
   invisible(results)
 
 }
@@ -517,8 +519,15 @@ flatten_choices = function(
           choice = as.integer(names(choices)),
           choice_order = as.integer(1:length(choices)), # always in order for SBS it seems?
           choice_recode = recodes,
+          checkbox_number = dplyr::case_when(
+            column_question[['SubSelector']] == 'MultipleAnswer' ~ dplyr::coalesce(choice_recode, choice),
+            .default = NA_integer_
+          ),
           choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_)
         )
+
+
+        column_choice_df
 
       }
 
@@ -611,7 +620,23 @@ flatten_choices = function(
 
       choice_df = dplyr::left_join(choice_order, choice_df, by = 'choice')
 
+      # Add another column for the choices if it's a checkbox:
+      is_checkbox = any(
+        question$Selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB'),
+        question$SubSelector == 'MultipleAnswer'
+      )
+
+      if(is_checkbox){
+        choice_df = dplyr::mutate(
+          choice_df,
+          checkbox_number = dplyr::coalesce(choice_recode, choice)
+        )
+      }
+
     }
+
+
+
 
     return(choice_df)
 
@@ -634,6 +659,7 @@ flatten_choices = function(
     question_id = character(0),
     column_number = integer(0),
     choice_order = integer(0),
+    checkbox_number = integer(0),
     choice = integer(0),
     choice_recode = integer(0),
     choice_description = character(0),
