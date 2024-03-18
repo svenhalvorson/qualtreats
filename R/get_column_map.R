@@ -299,6 +299,31 @@ get_column_map = function(
       choice = dplyr::coalesce(choice, choice_recode)
     )
 
+  # Want to differentiate cases where it's a checkbox:
+  checkbox_qids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(
+      question_selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB') |
+        question_subselector == 'MultipleAnswer' |
+        column_subselector == 'MultipleAnswer'
+    ) |>
+    purrr::pluck('question_id')
+
+  column_map = column_map |>
+    dplyr::mutate(
+      checkbox_number = dplyr::case_when(
+        question_id %in% checkbox_qids ~ dplyr::coalesce(choice_recode, choice),
+        TRUE ~ NA_integer_
+      ),
+      choice = dplyr::case_when(
+        question_id %in% checkbox_qids ~ NA_integer_,
+        TRUE ~ choice
+      ),
+      choice_recode = dplyr::case_when(
+        question_id %in% checkbox_qids ~ NA_integer_,
+        TRUE ~ choice_recode
+      )
+    )
 
   # Shouldn't be any numbers remaining as far as I know:
   if(
@@ -362,12 +387,16 @@ get_column_map = function(
         !is.na(loop_number) ~ paste0('_LP', pad2(loop_number)),
         TRUE ~ ''
       ),
-      CL = dplyr::case_when(
-        !is.na(column_number) ~ paste0('_CL', pad2(column_number)),
+      SBS = dplyr::case_when(
+        !is.na(column_number) ~ paste0('_SBS', pad2(column_number)),
         TRUE ~ ''
       ),
       SQ = dplyr::case_when(
         !is.na(subq_order) ~ paste0('_SQ', pad2(subq_order)),
+        TRUE ~ ''
+      ),
+      CB = dplyr::case_when(
+        !is.na(checkbox_number) ~ paste0('_CB', pad2(checkbox_number)),
         TRUE ~ ''
       ),
       CH = dplyr::case_when(
@@ -384,7 +413,7 @@ get_column_map = function(
         suffix != '' ~ paste0('_', suffix),
         TRUE ~ ''
       ),
-      suffix = paste0(LP, CL, SQ, CH, TEXT, suffix)
+      suffix = paste0(LP, SBS, SQ, CB, CH, TEXT, suffix)
     )
 
 
@@ -533,12 +562,11 @@ get_column_map = function(
       embedded_data,
       question_name,
       suffix,
+      checkbox_number,
       loop_number,
       column_number,
       subq_number,
       subq_order,
-      choice,
-      choice_recode,
       text_entry
     )
 
