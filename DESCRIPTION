@@ -1,7 +1,7 @@
 Package: qualtables
 Type: Package
 Title: Create tables of a Qualtrics surveys from the API
-Version: 0.0.0.9001
+Version: 0.0.0.9002
 Authors@R: 
   person("Sven", "Halvorson", , "svenpubmail@gmail.com", role = c("aut", "cre"))
 Description: Creates formatted versions of JSON data from the Qualtrics API.
