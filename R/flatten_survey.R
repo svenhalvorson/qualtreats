@@ -431,12 +431,16 @@ flatten_questions = function(
     dplyr::distinct(question_block, question_id, block_id),
     question_df,
     by = 'question_id'
-  )
+  ) |>
+    dplyr::group_by(block_id) |>
+    dplyr::mutate(question_number = dplyr::row_number()) |>
+    dplyr::ungroup()
 
   # Set the column order of the output:
   question_df = tibble::tibble(
     question_id = character(0),
     block_id = character(0),
+    question_number = integer(0),
     question_style = character(0),
     question_export_tag = character(0),
     question_description = character(0),
