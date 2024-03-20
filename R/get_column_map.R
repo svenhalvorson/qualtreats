@@ -1,7 +1,7 @@
 #' Get Column Map
 #' @details This function retuns a dataset describing the columns exported
 #' by qualtrics. Some columns describe how the data export looks (ex: \code{column_exported}), others give information
-#' about the columns (ex: \code{column_number}), and others yet give suggested
+#' about the columns (ex: \code{sbs_number}), and others yet give suggested
 #' renaming conventions (ex: \code{column_harmonized}). The columns return have these meanings:
 #' \itemize{
 #'  \item \code{column_exported}: column names of data exported generated using
@@ -10,14 +10,14 @@
 #'   \code{question_name} and \code{suffix}
 #'  \item \code{variable_label_exported}: column label exported
 #'  \item \code{variable_label}: column label derived
-#'  \item \code{question_export_tag}, \code{column_export_tag}, \code{subq_export_tag} : associated export tags
+#'  \item \code{question_export_tag}, \code{sbs_export_tag}, \code{subq_export_tag} : associated export tags
 #'  \item \code{question_id}: internal Qualtrics question id
 #'  \item \code{import_id}: metadata from the 3rd row of CSV exports
 #'  \item \code{question_name}: derived question name, made by using the position
 #'  within the block.
 #'  \item \code{suffix}: suffix created by question characteristics
 #'  \item \code{loop_number}: loop number from "loop and merge" questions
-#'  \item \code{column_number}: column within side-by-side questions
+#'  \item \code{sbs_number}: column within side-by-side questions
 #'  \item \code{subq_number}: internal id of that sub-question
 #'  \item \code{subq_order}: sub-question order within matrix or side-by-side questions.
 #'  Note that this is different from \code{subq_number}
@@ -33,7 +33,6 @@
 #' @return a \code{tibble} containing information about the columns exported
 #' by the survey associated with \code{survey_id}
 #' @author Sven Halvorson (svenpubmail@gmail.com)
-#' @export
 
 get_column_map = function(
     survey_id,
@@ -53,7 +52,7 @@ get_column_map = function(
 
   # Flatten the survey, get the simplified question types:
   survey_flat = qualtables::flatten_survey(survey_id)
-  qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
+  # qtypes = qualtables::simplify_qtypes(survey_flat = survey_flat)
 
   # Get exported columns ----------------------------------------------------
 
@@ -131,8 +130,13 @@ get_column_map = function(
 
   # The first thing I want to do is mark the loops. This is because
   # it's used as a prefix to the export tag
-  loop_question_ids = qtypes |>
-    dplyr::filter(question_loop == 1L) |>
+  loop_question_ids = survey_flat |>
+    purrr::pluck('blocks') |>
+    dplyr::filter(loop_and_merge == 1L) |>
+    dplyr::inner_join(
+      purrr::pluck(survey_flat, 'questions'),
+      by = 'block_id'
+    ) |>
     dplyr::pull(question_id)
 
   column_map = column_map |>
@@ -168,8 +172,9 @@ get_column_map = function(
 
   # We might be able to get away with recognizing pound signs
   # but let's try to not infer which questions are sbs:
-  sbs_question_ids = qtypes |>
-    dplyr::filter(question_sbs == 1L) |>
+  sbs_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(is_sbs == 1L) |>
     dplyr::pull(question_id)
 
   # Add in the profiles since they act like a sbs
@@ -180,7 +185,7 @@ get_column_map = function(
 
   column_map = column_map |>
     dplyr::mutate(
-      column_number = dplyr::case_when(
+      sbs_number = dplyr::case_when(
         question_id %in% profile_question_ids ~ stringr::str_extract(
           string = suffix,
           pattern = '[0-9]+'
@@ -190,9 +195,9 @@ get_column_map = function(
           pattern = '^#[0-9]+_'
         )
       ),
-      column_number = as.integer(
+      sbs_number = as.integer(
         stringr::str_extract(
-          string = column_number,
+          string = sbs_number,
           pattern = '[0-9]+'
         )
       ),
@@ -219,8 +224,9 @@ get_column_map = function(
 
   # SubQuestions ------------------------------------------------------------
 
-  matrix_question_ids = qtypes |>
-    dplyr::filter(question_matrix == 1L) |>
+  matrix_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(is_matrix == 1L) |>
     dplyr::pull(question_id)
 
   column_map = column_map |>
@@ -246,8 +252,7 @@ get_column_map = function(
 
   # Choices -----------------------------------------------------------------
 
-  # last part! Think I'm content to just assume any leftover numbers
-  # in the suffix are choices:
+  # Think I'm content to just assume any leftover numbers in the suffix are choices:
 
   column_map = column_map |>
     dplyr::mutate(
@@ -268,17 +273,17 @@ get_column_map = function(
     )
 
   # Now we need to join BOTH the choices and the choice_recodes because
-  # for whatever reason Qualtrics exports both in differen circumstances:
+  # for whatever reason Qualtrics exports both in different circumstances:
   column_map = column_map |>
     dplyr::left_join(
       dplyr::transmute(
         survey_flat[['choices']],
         question_id,
-        column_number,
+        sbs_number,
         choice,
         choice_recode2 = choice_recode
       ),
-      by = c('question_id', 'column_number', 'choice')
+      by = c('question_id', 'sbs_number', 'choice')
     )
 
   column_map = column_map |>
@@ -286,17 +291,17 @@ get_column_map = function(
       dplyr::transmute(
         survey_flat[['choices']],
         question_id,
-        column_number,
+        sbs_number,
         choice2 = choice,
         choice_recode
       ) |>
         dplyr::filter(!is.na(choice_recode)),
-      by = c('question_id', 'column_number', 'choice_recode')
+      by = c('question_id', 'sbs_number', 'choice_recode')
     ) |>
     dplyr::mutate(
       choice_recode = dplyr::coalesce(choice_recode, choice_recode2),
       choice = dplyr::coalesce(choice, choice2),
-      choice = dplyr::coalesce(choice, choice_recode)
+      choice_value = dplyr::coalesce(choice_recode, choice)
     )
 
   # Want to differentiate cases where it's a checkbox:
@@ -305,7 +310,7 @@ get_column_map = function(
     dplyr::filter(
       question_selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB') |
         question_subselector == 'MultipleAnswer' |
-        column_subselector == 'MultipleAnswer'
+        sbs_subselector == 'MultipleAnswer'
     ) |>
     purrr::pluck('question_id')
 
@@ -315,13 +320,9 @@ get_column_map = function(
         question_id %in% checkbox_qids ~ dplyr::coalesce(choice_recode, choice),
         TRUE ~ NA_integer_
       ),
-      choice = dplyr::case_when(
-        question_id %in% checkbox_qids ~ NA_integer_,
-        TRUE ~ choice
-      ),
-      choice_recode = dplyr::case_when(
-        question_id %in% checkbox_qids ~ NA_integer_,
-        TRUE ~ choice_recode
+      choice_value = dplyr::case_when(
+        question_id %in% checkbox_qids ~ 1L,
+        TRUE ~ choice_value
       )
     )
 
@@ -342,7 +343,8 @@ get_column_map = function(
 
   # Text entry --------------------------------------------------------------
 
-  text_question_ids = qtypes |>
+  text_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
     dplyr::filter(question_style == 'text') |>
     dplyr::pull(question_id)
 
@@ -369,13 +371,13 @@ get_column_map = function(
         survey_flat[['questions']],
         question_id,
         question_export_tag,
-        column_export_tag,
+        sbs_export_tag,
         subq_export_tag,
-        column_number,
+        sbs_number,
         subq_number,
         subq_order
       ),
-      by = c('question_id', 'column_number', 'subq_number')
+      by = c('question_id', 'sbs_number', 'subq_number')
     )
 
   # Nice suffix -------------------------------------------------------------
@@ -388,7 +390,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       SBS = dplyr::case_when(
-        !is.na(column_number) ~ paste0('_SBS', pad2(column_number)),
+        !is.na(sbs_number) ~ paste0('_SBS', pad2(sbs_number)),
         TRUE ~ ''
       ),
       SQ = dplyr::case_when(
@@ -429,18 +431,20 @@ get_column_map = function(
     ) |>
     # Descriptive boxes aren't exported:
     dplyr::filter(question_type != 'DB') |>
-    # repeats on column_number and subq_number mean we wanna grind this down:
+    # repeats on sbs_number and subq_number mean we wanna grind this down:
     dplyr::distinct(block_description, block_id, question_id) |>
     dplyr::group_by(block_id) |>
     dplyr::mutate(
-      question_num = pad2(dplyr::row_number())
+      question_number = pad2(dplyr::row_number())
     ) |>
     dplyr::ungroup() |>
     dplyr::transmute(
+      block_description,
+      question_number,
       question_name = paste0(
         block_description,
         '_',
-        question_num
+        question_number
       ),
       question_id
     )
@@ -462,11 +466,11 @@ get_column_map = function(
   var_labs_harmonized = survey_flat[['questions']] |>
     dplyr::transmute(
       question_id,
-      column_number,
+      sbs_number,
       subq_number,
       question_description = format_description(question_text),
-      column_description = format_description(column_description),
-      subq_description = format_description(subq_description)
+      sbs_text = format_description(sbs_text),
+      subq_text = format_description(subq_text)
     )
 
   # Add to the columns exported:
@@ -474,7 +478,7 @@ get_column_map = function(
     dplyr::transmute(
       column_exported,
       question_id,
-      column_number,
+      sbs_number,
       subq_number,
       loop_number,
       choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice),
@@ -482,7 +486,7 @@ get_column_map = function(
     ) |>
     dplyr::left_join(
       y = var_labs_harmonized,
-      by = c('question_id', 'column_number', 'subq_number')
+      by = c('question_id', 'sbs_number', 'subq_number')
     ) |>
     # Let's set it so that the question description only shows for the
     # first entry within a question
@@ -498,13 +502,13 @@ get_column_map = function(
   var_labs_harmonized = survey_flat[['choices']] |>
     dplyr::transmute(
       question_id,
-      column_number,
+      sbs_number,
       choice_description = format_description(choice_description),
       choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice)
     ) |>
     dplyr::right_join(
       y = var_labs_harmonized,
-      by = c('question_id', 'column_number', 'choice_join')
+      by = c('question_id', 'sbs_number', 'choice_join')
     ) |>
     dplyr::mutate(
       text_suffix = ifelse(
@@ -513,7 +517,7 @@ get_column_map = function(
         ''
       ),
       dplyr::across(
-        .cols = c('column_description', 'subq_description', 'choice_description'),
+        .cols = c('sbs_text', 'subq_text', 'choice_description'),
         .fns = function(x){
           dplyr::case_when(
             is.na(x) ~ '',
@@ -523,8 +527,8 @@ get_column_map = function(
       ),
       variable_label = paste0(
         question_description,
-        column_description,
-        subq_description,
+        sbs_text,
+        subq_text,
         choice_description,
         text_suffix
       ),
@@ -545,6 +549,23 @@ get_column_map = function(
       by = 'column_exported'
     )
 
+
+  # datatype ----------------------------------------------------------------
+
+  text_qids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(question_style == 'text') |>
+    dplyr::pull(question_id)
+
+  column_map = dplyr::mutate(
+    column_map,
+    datatype = case_when(
+      text_entry == 1 ~ 'character',
+      question_id %in% text_qids ~ 'character',
+      question_id %in% survey_flat$choices$question_id ~ 'integer'
+    )
+  )
+
   # Clean up ----------------------------------------------------------------
 
   # now we just attach the question name and suffix
@@ -552,21 +573,23 @@ get_column_map = function(
     dplyr::transmute(
       column_exported,
       column_harmonized = paste0(question_name, suffix),
+      suffix,
       variable_label_exported,
       variable_label,
       question_export_tag,
-      column_export_tag,
+      sbs_export_tag,
       subq_export_tag,
       question_id,
       import_id,
       embedded_data,
-      question_name,
-      suffix,
-      checkbox_number,
+      block_description,
       loop_number,
-      column_number,
+      question_number = as.integer(question_number),
       subq_number,
+      sbs_number,
+      checkbox_number,
       subq_order,
+      datatype,
       text_entry
     )
 

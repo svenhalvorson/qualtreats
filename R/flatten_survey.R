@@ -2,15 +2,17 @@
 #' @description Decompose the blocks, questions, and choices of a
 #' Qualtrics survey into rectangular data sets.
 #' @param survey_id string of the survey id, begins with 'SV_'
+#' @param simplify Make
 #' @param file_prefix string prefix to file names to be written
 #' @param file_format one of \code{c('csv', 'tsv')}
-#' @param drop_trash Should questions in the trash bin be discarded?
+#' @param drop_trash should questions in the trash bin be discarded?
 #' @return a named list of the three tables generated
 #' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 
 flatten_survey = function(
   survey_id,
+  simplify = FALSE,
   file_prefix = '',
   file_format = c('csv', 'tsv'),
   drop_trash = TRUE
@@ -80,8 +82,6 @@ flatten_survey = function(
       )
     }
   )
-
-
 
   invisible(results)
 
@@ -161,18 +161,18 @@ flatten_question_block = function(
   get_qids = function(block, block_id){
 
     # Keep only the questions and return empty tibble if none found
-    elements = block[['BlockElements']]
     elements = purrr::keep(
-      .x = elements,
+      .x = block[['BlockElements']],
       .p = function(x){x[['Type']] == 'Question'}
     )
 
     if(length(elements) == 0){
-      # return a tibble without rows
+
       tibble::tibble(
         block_id = character(0),
         question_id = character(0)
       )
+
     } else{
       # Otherwise get each of the qids out:
       tibble::tibble(
@@ -271,8 +271,9 @@ flatten_questions = function(
 
       subquestion_df = tibble::tibble(
         'question_id' = question_id,
+        'is_matrix' = 1L,
         'subq_number' = as.integer(names(subquestions)),
-        'subq_description' = purrr::map_chr(
+        'subq_text' = purrr::map_chr(
           .x = subquestions,
           .f = purrr::pluck,
           'Display',
@@ -335,12 +336,13 @@ flatten_questions = function(
       sbs_columns = sbs_question[['AdditionalQuestions']]
       tibble::tibble(
         question_id = question_id,
-        column_number = as.integer(names(sbs_columns)),
-        column_export_tag = purrr::map_chr(sbs_columns, purrr::pluck, 'AnswerDataExportTag', .default = NA_character_),
-        column_description = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionText', .default = NA_character_),
-        column_type = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionType', .default = NA_character_),
-        column_selector = purrr::map_chr(sbs_columns, purrr::pluck, 'Selector', .default = NA_character_),
-        column_subselector = purrr::map_chr(sbs_columns, purrr::pluck, 'SubSelector', .default = NA_character_)
+        is_sbs = 1L,
+        sbs_number = as.integer(names(sbs_columns)),
+        sbs_export_tag = purrr::map_chr(sbs_columns, purrr::pluck, 'AnswerDataExportTag', .default = NA_character_),
+        sbs_text = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionText', .default = NA_character_),
+        sbs_type = purrr::map_chr(sbs_columns, purrr::pluck, 'QuestionType', .default = NA_character_),
+        sbs_selector = purrr::map_chr(sbs_columns, purrr::pluck, 'Selector', .default = NA_character_),
+        sbs_subselector = purrr::map_chr(sbs_columns, purrr::pluck, 'SubSelector', .default = NA_character_)
       )
 
     }
@@ -373,26 +375,27 @@ flatten_questions = function(
       profile_columns = profile_question[['Choices']]
 
       profile_order = tibble::tibble(
-        column_number = as.integer(profile_question[['AnswerOrder']])
+        sbs_number = as.integer(profile_question[['AnswerOrder']])
       )
 
       profile_df = tibble::tibble(
         question_id = question_id,
-        column_number = as.integer(names(profile_columns)),
-        column_description = purrr::map_chr(profile_question[['Choices']], purrr::pluck, 'Display', .default = NA_character_)
+        is_sbs = 1L,
+        sbs_number = as.integer(names(profile_columns)),
+        sbs_text = purrr::map_chr(profile_question[['Choices']], purrr::pluck, 'Display', .default = NA_character_)
       )
 
       if(is.list(profile_question[['ChoiceDataExportTags']])){
-        profile_df[['column_export_tag']] = unlist(profile_question[['ChoiceDataExportTags']])
+        profile_df[['sbs_export_tag']] = unlist(profile_question[['ChoiceDataExportTags']])
       }
 
       # Do this to order them correctly:
       dplyr::left_join(
         x = tibble::tibble(
-          column_number = as.integer(profile_question[['ChoiceOrder']])
+          sbs_number = as.integer(profile_question[['ChoiceOrder']])
         ),
         y = profile_df,
-        by = c('column_number')
+        by = c('sbs_number')
       )
 
     }
@@ -434,25 +437,52 @@ flatten_questions = function(
   question_df = tibble::tibble(
     question_id = character(0),
     block_id = character(0),
+    question_style = character(0),
     question_export_tag = character(0),
     question_description = character(0),
     question_text = character(0),
     question_type = character(0),
     question_selector = character(0),
     question_subselector = character(0),
+    is_matrix = integer(0),
     subq_order = integer(0),
     subq_number = integer(0),
     subq_export_tag = character(0),
-    subq_description = character(0),
+    subq_text = character(0),
     subq_text_entry = integer(0),
-    column_number = integer(0),
-    column_export_tag = character(0),
-    column_description = character(0),
-    column_type = character(0),
-    column_selector = character(0),
-    column_subselector = character(0)
+    is_sbs = integer(0),
+    sbs_number = integer(0),
+    sbs_export_tag = character(0),
+    sbs_text = character(0),
+    sbs_type = character(0),
+    sbs_selector = character(0),
+    sbs_subselector = character(0)
   ) |>
-  dplyr::bind_rows(question_df)
+  dplyr::bind_rows(question_df) |>
+  dplyr::mutate(
+    question_style = dplyr::case_when(
+      question_type == 'Captcha' ~ 'captcha',
+      question_selector %in% c('TB', 'FLB', 'GRB') ~ 'descriptive',
+      question_selector == 'Signature' ~ 'signature',
+      question_type == 'TE' | question_selector == 'TE' | sbs_selector == 'TE' ~ 'text',
+      # radio
+      question_selector %in% c('SAHR', 'SAVR', 'SACOL', 'DL', 'SB', 'Likert') ~ 'radio',
+      question_subselector %in% c('SingleAnswer', 'DL') ~ 'radio',
+      sbs_subselector %in% c('SingleAnswer', 'DL') ~ 'radio',
+      # checkbox
+      question_selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB') ~ 'checkbox',
+      question_subselector == 'MultipleAnswer' ~ 'checkbox',
+      sbs_subselector == 'MultipleAnswer' ~ 'checkbox',
+      TRUE ~ NA_character_
+    ),
+    is_matrix = tidyr::replace_na(is_matrix, 0L),
+    is_sbs = tidyr::replace_na(is_sbs, 0L)
+  )
+
+  if(any(is.na(question_df[['question_style']]))
+  ){
+    warning('Some questions have no associated question_style DEV FIX THIS!')
+  }
 
   question_df
 
@@ -470,20 +500,6 @@ flatten_choices = function(
     }
   )
 
-  # So what I had written previously was a bit convoluted. Feel like I
-  # just need to write one function that takes in a question, and
-  # gives back the associated data frame for that. Should have these columns:
-  # tibble::tribble(
-  #   ~question_id,
-  #   ~column_number,
-  #   ~choice_order,
-  #   ~choice,
-  #   ~choice_recode,
-  #   ~choice_description,
-  #   ~choice_text_entry,
-  #   ~choice_analyze
-  # )
-
   get_choice_df = function(question){
 
     qtype = question[['QuestionType']]
@@ -499,7 +515,7 @@ flatten_choices = function(
 
       # TODO need to make this work for the profile questions too
 
-      get_column_choices = function(question_id, column_number, column_question){
+      get_column_choices = function(question_id, sbs_number, column_question){
 
         choices = column_question[['Answers']]
 
@@ -515,7 +531,7 @@ flatten_choices = function(
 
         column_choice_df = tibble::tibble(
           question_id = question[['QuestionID']],
-          column_number = column_number,
+          sbs_number = sbs_number,
           choice = as.integer(names(choices)),
           choice_order = as.integer(1:length(choices)), # always in order for SBS it seems?
           choice_recode = recodes,
@@ -526,7 +542,6 @@ flatten_choices = function(
           choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_)
         )
 
-
         column_choice_df
 
       }
@@ -534,7 +549,7 @@ flatten_choices = function(
       choice_df = purrr::pmap_dfr(
         .l = list(
           question_id = question[['QuestionID']],
-          column_number = as.integer(names(question[['AdditionalQuestions']])),
+          sbs_number = as.integer(names(question[['AdditionalQuestions']])),
           column_question = question[['AdditionalQuestions']]
         ),
         .f = get_column_choices
@@ -543,18 +558,18 @@ flatten_choices = function(
     # stupid profile questions:
     } else if(question[['Selector']] == 'Profile'){
 
-      get_profile_choices = function(column_number){
+      get_profile_choices = function(sbs_number){
 
-        column_choices = question[['Answers']][[column_number]]
+        column_choices = question[['Answers']][[sbs_number]]
 
         profile_column_df = tibble::tibble(
           question_id = question[['QuestionID']],
-          column_number = as.integer(column_number),
+          sbs_number = as.integer(sbs_number),
           choice_order = as.integer(names(column_choices)),
           choice = as.integer(names(column_choices)),
           choice_recode = NA_integer_,
           choice_description = purrr::map_chr(.x = column_choices, .f = purrr::pluck, 'Display', .default = NA_character_),
-          # The columns have text entry
+          # The columns don't have text entry
           choice_text_entry = 0L,
           choice_analyze = 1L
         )
@@ -629,14 +644,12 @@ flatten_choices = function(
       if(is_checkbox){
         choice_df = dplyr::mutate(
           choice_df,
-          checkbox_number = dplyr::coalesce(choice_recode, choice)
+          checkbox_number = dplyr::coalesce(choice_recode, choice),
+          choice_value = 1L
         )
       }
 
     }
-
-
-
 
     return(choice_df)
 
@@ -654,19 +667,28 @@ flatten_choices = function(
     dplyr::inner_join(choice_df, by = 'question_id')
 
   # make sure we always have these columns:
-
   tibble::tibble(
     question_id = character(0),
-    column_number = integer(0),
-    choice_order = integer(0),
+    sbs_number = integer(0),
     checkbox_number = integer(0),
-    choice = integer(0),
-    choice_recode = integer(0),
+    choice_value = integer(0),
     choice_description = character(0),
     choice_text_entry = integer(0),
-    choice_analyze = integer(0)
+    choice = integer(0),
+    choice_order = integer(0),
+    choice_recode = integer(0),
+    choice_analyze = integer(0),
+    datatype = character(0)
   ) |>
-    dplyr::bind_rows(choice_df)
+    dplyr::bind_rows(choice_df) |>
+    dplyr::mutate(
+      # Now create a derived column of what the user user probably wants:
+      choice_value = dplyr::coalesce(choice_value, choice_recode, choice),
+      # All numeric choices should have this key:
+      datatype = 'integer'
+    )
 
 }
+
+
 
