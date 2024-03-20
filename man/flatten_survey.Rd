@@ -6,6 +6,7 @@
 \usage{
 flatten_survey(
   survey_id,
+  simplify = FALSE,
   file_prefix = "",
   file_format = c("csv", "tsv"),
   drop_trash = TRUE
@@ -14,11 +15,13 @@ flatten_survey(
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
 
+\item{simplify}{Make}
+
 \item{file_prefix}{string prefix to file names to be written}
 
 \item{file_format}{one of \code{c('csv', 'tsv')}}
 
-\item{drop_trash}{Should questions in the trash bin be discarded?}
+\item{drop_trash}{should questions in the trash bin be discarded?}
 }
 \value{
 a named list of the three tables generated
