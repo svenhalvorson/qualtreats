@@ -402,7 +402,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       CH = dplyr::case_when(
-        !is.na(dplyr::coalesce(choice_recode, choice)) ~ paste0(
+        is.na(checkbox_number) & !is.na(dplyr::coalesce(choice_recode, choice)) ~ paste0(
           '_CH', pad2(dplyr::coalesce(choice_recode, choice))
         ),
         TRUE ~ ''
@@ -559,7 +559,7 @@ get_column_map = function(
 
   column_map = dplyr::mutate(
     column_map,
-    datatype = case_when(
+    datatype = dplyr::case_when(
       text_entry == 1 ~ 'character',
       question_id %in% text_qids ~ 'character',
       question_id %in% survey_flat$choices$question_id ~ 'integer'
