@@ -146,6 +146,7 @@ flatten_blocks = function(
     )
 
   block_df
+
 }
 
 
@@ -425,15 +426,21 @@ flatten_questions = function(
   }
 
   # UPDATE 2022-10-05: moving the block ID to be within the questions
-  # data frame instead of its own data frame. This also sorts the questions:
+  # data frame instead of its own data frame. This also helps us get question_number
   question_block = flatten_question_block(survey)
   question_df = dplyr::left_join(
     dplyr::distinct(question_block, question_id, block_id),
     question_df,
     by = 'question_id'
   ) |>
+    dplyr::group_by(block_id, question_id) |>
+    dplyr::mutate(
+      question_number = dplyr::row_number() == 1
+    ) |>
     dplyr::group_by(block_id) |>
-    dplyr::mutate(question_number = dplyr::row_number()) |>
+    dplyr::mutate(
+      question_number = cumsum(question_number)
+    ) |>
     dplyr::ungroup()
 
   # Set the column order of the output:
