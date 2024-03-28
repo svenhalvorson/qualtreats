@@ -21,7 +21,7 @@ Get Column Map
 \details{
 This function retuns a dataset describing the columns exported
 by qualtrics. Some columns describe how the data export looks (ex: \code{column_exported}), others give information
-about the columns (ex: \code{column_number}), and others yet give suggested
+about the columns (ex: \code{sbs_number}), and others yet give suggested
 renaming conventions (ex: \code{column_harmonized}). The columns return have these meanings:
 \itemize{
  \item \code{column_exported}: column names of data exported generated using
@@ -30,14 +30,14 @@ renaming conventions (ex: \code{column_harmonized}). The columns return have the
   \code{question_name} and \code{suffix}
  \item \code{variable_label_exported}: column label exported
  \item \code{variable_label}: column label derived
- \item \code{question_export_tag}, \code{column_export_tag}, \code{subq_export_tag} : associated export tags
+ \item \code{question_export_tag}, \code{sbs_export_tag}, \code{subq_export_tag} : associated export tags
  \item \code{question_id}: internal Qualtrics question id
  \item \code{import_id}: metadata from the 3rd row of CSV exports
  \item \code{question_name}: derived question name, made by using the position
  within the block.
  \item \code{suffix}: suffix created by question characteristics
  \item \code{loop_number}: loop number from "loop and merge" questions
- \item \code{column_number}: column within side-by-side questions
+ \item \code{sbs_number}: column within side-by-side questions
  \item \code{subq_number}: internal id of that sub-question
  \item \code{subq_order}: sub-question order within matrix or side-by-side questions.
  Note that this is different from \code{subq_number}
