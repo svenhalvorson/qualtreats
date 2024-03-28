@@ -2,19 +2,15 @@
 #' @description Decompose the blocks, questions, and choices of a
 #' Qualtrics survey into rectangular data sets.
 #' @param survey_id string of the survey id, begins with 'SV_'
-#' @param simplify Make
-#' @param file_prefix string prefix to file names to be written
-#' @param file_format one of \code{c('csv', 'tsv')}
+#' @param file_format export format for column names. One of \code{c('spss', 'csv', 'tsv')}
 #' @param drop_trash should questions in the trash bin be discarded?
-#' @return a named list of the three tables generated
+#' @return a named list of the four tables generated
 #' @export "flatten_survey"
 #' @author Sven Halvorson (svenpubmail@gmail.com)
 
 flatten_survey = function(
   survey_id,
-  simplify = FALSE,
-  file_prefix = '',
-  file_format = c('csv', 'tsv'),
+  file_format = c('spss', 'csv', 'tsv'),
   drop_trash = TRUE
 ){
 
@@ -22,8 +18,7 @@ flatten_survey = function(
     all(
       valid_survey_id(survey_id),
       valid_api_key(Sys.getenv('QUALTRICS_API_KEY')),
-      valid_base_url(Sys.getenv('QUALTRICS_BASE_URL')),
-      is.character(file_prefix) & length(file_prefix) == 1
+      valid_base_url(Sys.getenv('QUALTRICS_BASE_URL'))
     )
   )
 
@@ -42,36 +37,44 @@ flatten_survey = function(
     'choices'
   )
 
-  results = list(
+  survey_flat = list(
     flatten_blocks(survey),
     flatten_questions(survey),
     flatten_choices(survey)
   )
-  names(results) = tables
+  names(survey_flat) = tables
 
   # Drop trash:
   if(drop_trash){
 
-    results[['blocks']] = dplyr::filter(
-      results[['blocks']],
+    survey_flat[['blocks']] = dplyr::filter(
+      survey_flat[['blocks']],
       block_description != 'Trash / Unused Questions'
     )
 
-    results[['questions']] = dplyr::filter(
-      results[['questions']],
-      block_id %in% results[['blocks']][['block_id']]
+    survey_flat[['questions']] = dplyr::filter(
+      survey_flat[['questions']],
+      block_id %in% survey_flat[['blocks']][['block_id']]
     )
 
-    results[['choices']] = dplyr::filter(
-      results[['choices']],
-      question_id %in% results[['questions']][['question_id']]
+    survey_flat[['choices']] = dplyr::filter(
+      survey_flat[['choices']],
+      question_id %in% survey_flat[['questions']][['question_id']]
     )
 
   }
 
+  if(any(is.na(survey_flat[['questions']][['question_style']]))
+  ){
+    warning('Some questions have no associated question_style DEV FIX THIS!')
+  }
+
+  # We're moving get_column_map here so that the output is bundled:
+  survey_flat$columns = get_column_map(survey_flat, survey_id, file_format)
+
   # All the purr map functions keep names (which I hate) so let's kill them off:
-  results = purrr::map(
-    .x = results,
+  survey_flat = purrr::map(
+    .x = survey_flat,
     .f = function(x){
       dplyr::mutate(
         .data = x,
@@ -83,7 +86,40 @@ flatten_survey = function(
     }
   )
 
-  invisible(results)
+  # Create question_name in questions:
+  survey_flat$questions = dplyr::left_join(
+    x = survey_flat$questions,
+    y = dplyr::distinct(survey_flat$blocks, block_id, block_description),
+    by = c('block_id'),
+    relationship = 'many-to-one',
+    unmatched = 'error'
+  ) |>
+    dplyr::mutate(
+      question_name = paste0(
+        block_description,
+        '_',
+        pad2(question_number)
+      )
+    ) |>
+    dplyr::select(-question_number) |>
+    dplyr::relocate(question_name, .after = block_id)
+
+  # Validate some of the ouput:
+  stopifnot(
+    all(
+      sort(unique(survey_flat$questions$question_name)) == sort(unique(survey_flat$questions$question_name)),
+      nrow(survey_flat$columns) == nrow(
+        dplyr::left_join(
+          survey_flat$columns,
+          survey_flat$questions,
+          by = c('question_name', 'question_id', 'subq_number', 'sbs_number'),
+          relationship = 'many-to-one'
+        )
+      )
+    )
+  )
+
+  invisible(survey_flat)
 
 }
 
@@ -490,11 +526,6 @@ flatten_questions = function(
     is_sbs = tidyr::replace_na(is_sbs, 0L)
   )
 
-  if(any(is.na(question_df[['question_style']]))
-  ){
-    warning('Some questions have no associated question_style DEV FIX THIS!')
-  }
-
   question_df
 
 }
@@ -701,5 +732,586 @@ flatten_choices = function(
 
 }
 
+get_column_map = function(
+    survey_flat,
+    survey_id,
+    file_format = c('spss', 'csv', 'tsv')
+){
 
+  file_format = rlang::arg_match(file_format)
+
+  # Get exported columns ----------------------------------------------------
+
+  # Get the exported column names and associated columns:
+  exported_columns = suppressMessages(
+    qualtables::get_responses(
+      survey_id = survey_id,
+      file_format = file_format,
+      trim_rows = FALSE,
+      limit = 0
+    )
+  ) |>
+    dplyr::select(-(StartDate:UserLanguage))
+
+  # Have to re-do it if file_format == 'spss' since it doesn't give metadata:
+  if(file_format == 'spss'){
+
+    exported_metadata = suppressMessages(
+      qualtables::get_responses(
+        survey_id = survey_id,
+        file_format = 'csv',
+        trim_rows = FALSE,
+        limit = 0
+      )
+    ) |>
+      dplyr::select(-(StartDate:UserLanguage)) |>
+      dplyr::slice(2) |>
+      as.character()
+
+    variable_label_exported = purrr::map_chr(
+      .x = exported_columns,
+      .f = attr,
+      'label'
+    )
+
+  }else {
+    exported_metadata = as.character(dplyr::slice(exported_columns, 2))
+    variable_label_exported = as.character(dplyr::slice(exported_columns, 1))
+  }
+
+  # Start making the table of exported columns and their features.
+  # Want these elements:
+  # question_id, qtype, matrix, sbs, export_tags
+  get_exported_choice = function(x){
+    as.integer(purrr::pluck(jsonlite::fromJSON(x), 'choiceId', .default = NA_character_))
+  } # This only seems to get the checkbox questions
+
+  get_variable_label = function(x){
+    purrr::pluck(jsonlite::fromJSON(x), 'ImportId', .default = NA_character_)
+  }
+
+  column_map = tibble::tibble(
+    column_exported = colnames(exported_columns),
+    variable_label_exported = variable_label_exported,
+    import_id = purrr::map_chr(
+      .x = exported_metadata,
+      .f = get_variable_label
+    ),
+    question_id = stringr::str_extract(
+      string = import_id,
+      pattern = 'QID[0-9]+'
+    ),
+    choice_recode = purrr::map_int(
+      .x = exported_metadata,
+      .f = get_exported_choice
+    ),
+    embedded_data = as.integer(is.na(question_id))
+  )
+
+  # Set aside for error check:
+  column_map_nrow = nrow(column_map)
+
+  #  Loop number ------------------------------------------------------------
+
+  # The first thing I want to do is mark the loops. This is because
+  # it's used as a prefix to the export tag
+  loop_question_ids = survey_flat |>
+    purrr::pluck('blocks') |>
+    dplyr::filter(loop_and_merge == 1L) |>
+    dplyr::inner_join(
+      purrr::pluck(survey_flat, 'questions'),
+      by = 'block_id'
+    ) |>
+    dplyr::pull(question_id)
+
+  column_map = column_map |>
+    dplyr::mutate(
+      loop_number = dplyr::case_when(
+        question_id %in% loop_question_ids ~ stringr::str_extract(
+          string = import_id,
+          pattern = '^[0-9]+_'
+        )
+      ),
+      loop_number = as.integer(
+        stringr::str_extract(
+          string = loop_number,
+          pattern = '[0-9]+'
+        )
+      ),
+      # suffix will be the piece we keep grinding down and extracting from:
+      suffix = dplyr::case_when(
+        question_id %in% loop_question_ids ~ stringr::str_remove(
+          string = import_id,
+          pattern = '^[0-9]+_'
+        ),
+        TRUE ~ import_id
+      ),
+      suffix = stringr::str_remove(
+        string = suffix,
+        pattern = 'QID[0-9]+_?'
+      )
+    )
+
+
+  # Column number ----------------------------------------------------------
+
+  # We might be able to get away with recognizing pound signs
+  # but let's try to not infer which questions are sbs:
+  sbs_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(is_sbs == 1L) |>
+    dplyr::pull(question_id)
+
+  # Add in the profiles since they act like a sbs
+  profile_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(question_selector == 'Profile') |>
+    dplyr::pull(question_id)
+
+  column_map = column_map |>
+    dplyr::mutate(
+      sbs_number = dplyr::case_when(
+        question_id %in% profile_question_ids ~ stringr::str_extract(
+          string = suffix,
+          pattern = '[0-9]+'
+        ),
+        question_id %in% sbs_question_ids ~ stringr::str_extract(
+          string = suffix,
+          pattern = '^#[0-9]+_'
+        )
+      ),
+      sbs_number = as.integer(
+        stringr::str_extract(
+          string = sbs_number,
+          pattern = '[0-9]+'
+        )
+      ),
+      suffix = dplyr::case_when(
+        question_id %in% sbs_question_ids ~ stringr::str_remove(suffix, '^#[0-9]+_'),
+        TRUE ~ suffix
+      )
+    )
+
+  # little check in case we don't understand this export schema as well as we think:
+  if(
+    any(
+      column_map |>
+      dplyr::filter(embedded_data == 0) |>
+      dplyr::pull(suffix) |>
+      stringr::str_detect(
+        pattern = '#'
+      )
+    )
+  ){
+    stop('residual pound signs found in suffix')
+  }
+
+
+  # SubQuestions ------------------------------------------------------------
+
+  matrix_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(is_matrix == 1L) |>
+    dplyr::pull(question_id)
+
+  column_map = column_map |>
+    dplyr::mutate(
+      subq_number = dplyr::case_when(
+        question_id %in% matrix_question_ids ~ stringr::str_extract(
+          string = suffix,
+          pattern = '^[0-9]+_?'
+        )
+      ),
+      subq_number = as.integer(
+        stringr::str_extract(
+          string = subq_number,
+          pattern ='[0-9]+'
+        )
+      ),
+      suffix = dplyr::case_when(
+        question_id %in% matrix_question_ids ~ stringr::str_remove(suffix, '^[0-9]+_?'),
+        TRUE ~ suffix
+      )
+    )
+
+
+  # Choices -----------------------------------------------------------------
+
+  # Think I'm content to just assume any leftover numbers in the suffix are choices:
+
+  column_map = column_map |>
+    dplyr::mutate(
+      choice = stringr::str_extract(
+        string = suffix,
+        pattern = '^[0-9]+_?'
+      ),
+      choice = as.integer(
+        stringr::str_extract(
+          string = choice,
+          pattern ='[0-9]+'
+        )
+      ),
+      suffix = stringr::str_remove(
+        string = suffix,
+        pattern = '^[0-9]+_?'
+      )
+    )
+
+  # Now we need to join BOTH the choices and the choice_recodes because
+  # for whatever reason Qualtrics exports both in different circumstances:
+  column_map = column_map |>
+    dplyr::left_join(
+      dplyr::transmute(
+        survey_flat[['choices']],
+        question_id,
+        sbs_number,
+        choice,
+        choice_recode2 = choice_recode
+      ),
+      by = c('question_id', 'sbs_number', 'choice')
+    )
+
+  column_map = column_map |>
+    dplyr::left_join(
+      dplyr::transmute(
+        survey_flat[['choices']],
+        question_id,
+        sbs_number,
+        choice2 = choice,
+        choice_recode
+      ) |>
+        dplyr::filter(!is.na(choice_recode)),
+      by = c('question_id', 'sbs_number', 'choice_recode')
+    ) |>
+    dplyr::mutate(
+      choice_recode = dplyr::coalesce(choice_recode, choice_recode2),
+      choice = dplyr::coalesce(choice, choice2),
+      choice_value = dplyr::coalesce(choice_recode, choice)
+    )
+
+  # Want to differentiate cases where it's a checkbox:
+  checkbox_qids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(
+      question_selector %in% c('MAHR', 'MAVR', 'MACOL', 'MSB') |
+        question_subselector == 'MultipleAnswer' |
+        sbs_subselector == 'MultipleAnswer'
+    ) |>
+    purrr::pluck('question_id')
+
+  column_map = column_map |>
+    dplyr::mutate(
+      checkbox_number = dplyr::case_when(
+        question_id %in% checkbox_qids ~ dplyr::coalesce(choice_recode, choice),
+        TRUE ~ NA_integer_
+      ),
+      choice_value = dplyr::case_when(
+        question_id %in% checkbox_qids ~ 1L,
+        TRUE ~ choice_value
+      )
+    )
+
+  # Shouldn't be any numbers remaining as far as I know:
+  if(
+    any(
+      column_map |>
+      dplyr::filter(embedded_data == 0) |>
+      dplyr::pull(suffix) |>
+      stringr::str_detect(
+        pattern = '[0-9]'
+      )
+    )
+  ){
+    stop('residual numbers found in suffix')
+  }
+
+
+  # Text entry --------------------------------------------------------------
+
+  text_question_ids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(question_style == 'text') |>
+    dplyr::pull(question_id)
+
+  column_map = column_map |>
+    dplyr::mutate(
+      text_entry = as.integer(
+        stringr::str_detect(
+          string = suffix,
+          pattern = 'TEXT'
+        )
+        & (!question_id %in% text_question_ids | question_id %in% sbs_question_ids)
+      ),
+      suffix = stringr::str_remove(
+        string = suffix,
+        pattern = 'TEXT'
+      )
+    )
+
+  # Export tags -------------------------------------------------------------
+
+  column_map = column_map |>
+    dplyr::left_join(
+      y = dplyr::select(
+        survey_flat[['questions']],
+        question_id,
+        question_export_tag,
+        sbs_export_tag,
+        subq_export_tag,
+        sbs_number,
+        subq_number,
+        subq_order
+      ),
+      by = c('question_id', 'sbs_number', 'subq_number')
+    )
+
+  # Nice suffix -------------------------------------------------------------
+
+  # now we use all that data we extracted to make the coded suffix:
+  column_map = column_map |>
+    dplyr::mutate(
+      LP = dplyr::case_when(
+        !is.na(loop_number) ~ paste0('_LP', pad2(loop_number)),
+        TRUE ~ ''
+      ),
+      SBS = dplyr::case_when(
+        !is.na(sbs_number) ~ paste0('_SBS', pad2(sbs_number)),
+        TRUE ~ ''
+      ),
+      SQ = dplyr::case_when(
+        !is.na(subq_order) ~ paste0('_SQ', pad2(subq_order)),
+        TRUE ~ ''
+      ),
+      CB = dplyr::case_when(
+        !is.na(checkbox_number) ~ paste0('_CB', pad2(checkbox_number)),
+        TRUE ~ ''
+      ),
+      CH = dplyr::case_when(
+        is.na(checkbox_number) & !is.na(dplyr::coalesce(choice_recode, choice)) ~ paste0(
+          '_CH', pad2(dplyr::coalesce(choice_recode, choice))
+        ),
+        TRUE ~ ''
+      ),
+      TEXT = dplyr::case_when(
+        text_entry == 1 ~ '_TEXT',
+        TRUE ~ ''
+      ),
+      suffix = dplyr::case_when(
+        suffix != '' ~ paste0('_', suffix),
+        TRUE ~ ''
+      ),
+      suffix = paste0(LP, SBS, SQ, CB, CH, TEXT, suffix)
+    )
+
+
+  # Question names -------------------------------------------------------------
+
+  # Now we're on to styling up our custom names:
+  question_names = survey_flat[['blocks']] |>
+    dplyr::select(block_description, block_id) |>
+    dplyr::left_join(
+      y = dplyr::select(survey_flat[['questions']], question_id, block_id, question_type),
+      by = 'block_id',
+      relationship = 'one-to-many'
+    ) |>
+    # Descriptive boxes aren't exported:
+    dplyr::filter(question_type != 'DB') |>
+    # repeats on sbs_number and subq_number mean we wanna grind this down:
+    dplyr::distinct(block_description, block_id, question_id) |>
+    dplyr::group_by(block_id) |>
+    dplyr::mutate(
+      question_number = pad2(dplyr::row_number())
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::transmute(
+      block_description,
+      question_number,
+      question_name = paste0(
+        block_description,
+        '_',
+        question_number
+      ),
+      question_id
+    )
+
+  column_map = dplyr::right_join(
+    x = question_names,
+    y = column_map,
+    by = 'question_id'
+  )
+
+
+  # Prettier variable labels ------------------------------------------------
+
+  # TODO: signature suffixes are gone
+  # I'm finding that the variable labels exported both have unnecessary junk
+  # in them but also have truncated text. Let's see if we can pretty them up
+  # a bit:
+
+  var_labs_harmonized = survey_flat[['questions']] |>
+    dplyr::transmute(
+      question_id,
+      sbs_number,
+      subq_number,
+      question_description = format_description(question_text),
+      sbs_text = format_description(sbs_text),
+      subq_text = format_description(subq_text)
+    )
+
+  # Add to the columns exported:
+  var_labs_harmonized = column_map |>
+    dplyr::transmute(
+      column_exported,
+      question_id,
+      sbs_number,
+      subq_number,
+      loop_number,
+      choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice),
+      text_entry
+    ) |>
+    dplyr::left_join(
+      y = var_labs_harmonized,
+      by = c('question_id', 'sbs_number', 'subq_number')
+    ) |>
+    # Let's set it so that the question description only shows for the
+    # first entry within a question
+    dplyr::group_by(question_id, loop_number) |>
+    dplyr::mutate(
+      question_description = dplyr::case_when(
+        dplyr::row_number() == 1 ~ question_description,
+        TRUE ~ ''
+      )
+    )
+
+  # add choice descriptions and make the variable label:
+  var_labs_harmonized = survey_flat[['choices']] |>
+    dplyr::transmute(
+      question_id,
+      sbs_number,
+      choice_description = format_description(choice_description),
+      choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice)
+    ) |>
+    dplyr::right_join(
+      y = var_labs_harmonized,
+      by = c('question_id', 'sbs_number', 'choice_join')
+    ) |>
+    dplyr::mutate(
+      text_suffix = ifelse(
+        text_entry == 1,
+        ' - Text',
+        ''
+      ),
+      dplyr::across(
+        .cols = c('sbs_text', 'subq_text', 'choice_description'),
+        .fns = function(x){
+          dplyr::case_when(
+            is.na(x) ~ '',
+            TRUE ~ paste0(' - ', x)
+          )
+        }
+      ),
+      variable_label = paste0(
+        question_description,
+        sbs_text,
+        subq_text,
+        choice_description,
+        text_suffix
+      ),
+      # If there is no question description (not first), we want to remove the leading dash
+      variable_label = stringr::str_remove(
+        string = variable_label,
+        pattern = '^ - '
+      )
+    )
+
+  column_map = column_map |>
+    dplyr::left_join(
+      y = dplyr::select(
+        var_labs_harmonized,
+        column_exported,
+        variable_label
+      ),
+      by = 'column_exported'
+    )
+
+
+  # datatype ----------------------------------------------------------------
+
+  text_qids = survey_flat |>
+    purrr::pluck('questions') |>
+    dplyr::filter(question_style == 'text') |>
+    dplyr::pull(question_id)
+
+  column_map = dplyr::mutate(
+    column_map,
+    datatype = dplyr::case_when(
+      text_entry == 1 ~ 'character',
+      question_id %in% text_qids ~ 'character',
+      question_id %in% survey_flat$choices$question_id ~ 'integer'
+    )
+  )
+
+  # Clean up ----------------------------------------------------------------
+
+  # now we just attach the question name and suffix
+  column_map = column_map |>
+    dplyr::transmute(
+      column_exported,
+      column_harmonized = paste0(question_name, suffix),
+      question_name,
+      suffix,
+      variable_label_exported,
+      variable_label,
+      question_export_tag,
+      sbs_export_tag,
+      subq_export_tag,
+      question_id,
+      import_id,
+      embedded_data,
+      block_description,
+      loop_number,
+      question_number = as.integer(question_number),
+      subq_number,
+      sbs_number,
+      checkbox_number,
+      subq_order,
+      datatype,
+      text_entry
+    )
+
+  # Don't think we want to have any values for the embedded data value except
+  # column_exported, import_id, and embedded_data:
+  column_map = column_map |>
+    dplyr::mutate(
+      dplyr::across(
+        .cols = -c('column_exported', 'import_id', 'embedded_data'),
+        .fns = function(x){
+          replace(
+            x = x,
+            list = embedded_data == 1L,
+            NA
+          )
+        }
+      ),
+      column_harmonized = dplyr::case_when(
+        embedded_data == 1L ~ column_exported,
+        TRUE ~ column_harmonized
+      )
+    )
+
+
+  # Check -------------------------------------------------------------------
+
+  if(
+    any(
+      nrow(column_map) != column_map_nrow,
+      length(column_map$column_harmonized) != length(unique(column_map$column_harmonized))
+    )
+  ){
+    stop('problem in creating column map!')
+  }
+
+  column_map
+
+}
 

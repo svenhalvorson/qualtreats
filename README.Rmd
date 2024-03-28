@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This is still under development. If you find bugs or wish to collaborate, please contact me at svenpubmail@gmail.com
+This is under development. If you find bugs or wish to collaborate, please contact me at svenpubmail@gmail.com
 
 *Huge thank you to authors of [qualtRics](https://github.com/ropensci/qualtRics). Appreciate learn/steal-ing your `httr` code*
 
