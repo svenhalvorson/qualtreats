@@ -6,25 +6,19 @@
 \usage{
 flatten_survey(
   survey_id,
-  simplify = FALSE,
-  file_prefix = "",
-  file_format = c("csv", "tsv"),
+  file_format = c("spss", "csv", "tsv"),
   drop_trash = TRUE
 )
 }
 \arguments{
 \item{survey_id}{string of the survey id, begins with 'SV_'}
 
-\item{simplify}{Make}
-
-\item{file_prefix}{string prefix to file names to be written}
-
-\item{file_format}{one of \code{c('csv', 'tsv')}}
+\item{file_format}{export format for column names. One of \code{c('spss', 'csv', 'tsv')}}
 
 \item{drop_trash}{should questions in the trash bin be discarded?}
 }
 \value{
-a named list of the three tables generated
+a named list of the four tables generated
 }
 \description{
 Decompose the blocks, questions, and choices of a

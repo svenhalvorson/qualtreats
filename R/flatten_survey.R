@@ -1261,7 +1261,7 @@ get_column_map = function(
       question_name,
       suffix,
       variable_label,
-      variable_label_exported
+      variable_label_exported,
       question_export_tag,
       sbs_export_tag,
       subq_export_tag,

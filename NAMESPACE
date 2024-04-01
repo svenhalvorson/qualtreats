@@ -2,7 +2,6 @@
 
 export("flatten_survey")
 export(format_description)
-export(get_column_map)
 export(get_responses)
 export(get_survey)
 export(pad2)
