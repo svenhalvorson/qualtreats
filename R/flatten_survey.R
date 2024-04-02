@@ -104,6 +104,23 @@ flatten_survey = function(
     dplyr::select(-question_number, -block_description) |>
     dplyr::relocate(question_name, .after = block_id)
 
+  # Flag numeric choices:
+  survey_flat$columns = survey_flat |>
+    purrr::pluck('choices') |>
+    dplyr::distinct(question_id, sbs_number) |>
+    dplyr::mutate(is_numeric_choice = 1L) |>
+    dplyr::right_join(
+      survey_flat$columns,
+      by = c('question_id', 'sbs_number'),
+      relationship = 'one-to-many'
+    ) |>
+    dplyr::mutate(
+      is_numeric_choice = dplyr::case_when(
+        text_entry == 1L ~ 0L,
+        TRUE ~ tidyr::replace_na(is_numeric_choice, 0L)
+      )
+    )
+
   # Validate some of the ouput:
   stopifnot(
     all(
@@ -715,19 +732,18 @@ flatten_choices = function(
     checkbox_number = integer(0),
     choice_value = integer(0),
     choice_description = character(0),
+    is_numeric_choice = integer(0),
     choice_text_entry = integer(0),
     choice = integer(0),
     choice_order = integer(0),
     choice_recode = integer(0),
-    choice_analyze = integer(0),
-    datatype = character(0)
+    choice_analyze = integer(0)
   ) |>
     dplyr::bind_rows(choice_df) |>
     dplyr::mutate(
       # Now create a derived column of what the user user probably wants:
       choice_value = dplyr::coalesce(choice_value, choice_recode, choice),
-      # All numeric choices should have this key:
-      datatype = 'integer'
+      is_numeric_choice = 1L
     )
 
 }
@@ -1039,8 +1055,7 @@ get_column_map = function(
         stringr::str_detect(
           string = suffix,
           pattern = 'TEXT'
-        )
-        & (!question_id %in% text_question_ids | question_id %in% sbs_question_ids)
+        ) | question_id %in% text_question_ids
       ),
       suffix = stringr::str_remove(
         string = suffix,
@@ -1234,23 +1249,6 @@ get_column_map = function(
       by = 'column_exported'
     )
 
-
-  # datatype ----------------------------------------------------------------
-
-  text_qids = survey_flat |>
-    purrr::pluck('questions') |>
-    dplyr::filter(question_style == 'text') |>
-    dplyr::pull(question_id)
-
-  column_map = dplyr::mutate(
-    column_map,
-    datatype = dplyr::case_when(
-      text_entry == 1 ~ 'character',
-      question_id %in% text_qids ~ 'character',
-      question_id %in% survey_flat$choices$question_id ~ 'integer'
-    )
-  )
-
   # Clean up ----------------------------------------------------------------
 
   # now we just attach the question name and suffix
@@ -1275,8 +1273,8 @@ get_column_map = function(
       sbs_number,
       checkbox_number,
       subq_order,
-      datatype,
-      text_entry
+      text_entry,
+      is_numeric_choice
     )
 
   # Don't think we want to have any values for the embedded data value except
