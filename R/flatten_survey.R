@@ -119,7 +119,8 @@ flatten_survey = function(
         text_entry == 1L ~ 0L,
         TRUE ~ tidyr::replace_na(is_numeric_choice, 0L)
       )
-    )
+    ) |>
+    dplyr::relocate(is_numeric_choice, .after = checkbox_number)
 
   # Validate some of the ouput:
   stopifnot(
@@ -1273,8 +1274,7 @@ get_column_map = function(
       sbs_number,
       checkbox_number,
       subq_order,
-      text_entry,
-      is_numeric_choice
+      text_entry
     )
 
   # Don't think we want to have any values for the embedded data value except
