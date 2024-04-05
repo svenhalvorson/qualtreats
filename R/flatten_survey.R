@@ -105,14 +105,17 @@ flatten_survey = function(
     dplyr::relocate(question_name, .after = block_id)
 
   # Flag numeric choices:
-  survey_flat$columns = survey_flat |>
+  numeric_choices = survey_flat |>
     purrr::pluck('choices') |>
     dplyr::distinct(question_id, sbs_number) |>
-    dplyr::mutate(is_numeric_choice = 1L) |>
-    dplyr::right_join(
-      survey_flat$columns,
+    dplyr::mutate(is_numeric_choice = 1L)
+
+  survey_flat$columns = survey_flat |>
+    purrr::pluck('columns') |>
+    dplyr::left_join(
+      numeric_choices,
       by = c('question_id', 'sbs_number'),
-      relationship = 'one-to-many'
+      relationship = 'many-to-one'
     ) |>
     dplyr::mutate(
       is_numeric_choice = dplyr::case_when(
@@ -303,11 +306,12 @@ flatten_questions = function(
   matrix_questions = purrr::keep(
     .x = questions,
     .p = function(x){
-      x[['QuestionType']] %in% c('Matrix', 'SBS', 'DD')
+      x[['QuestionType']] %in% c('Matrix', 'SBS', 'DD') | x[['Selector']] %in% c('FORM')
     }
   )
 
   if(length(matrix_questions) > 0){
+
     get_subquestions = function(question_id){
 
       question = questions[[question_id]]
@@ -333,10 +337,6 @@ flatten_questions = function(
           .f = purrr::pluck,
           'Display',
           .default = NA_character_
-        ),
-        'subq_text_entry' = purrr::map_int(
-          .x = subquestions,
-          .f = function(x){'TextEntry' %in% names(x)}
         )
       )
 
@@ -514,7 +514,6 @@ flatten_questions = function(
     subq_number = integer(0),
     subq_export_tag = character(0),
     subq_text = character(0),
-    subq_text_entry = integer(0),
     is_sbs = integer(0),
     sbs_number = integer(0),
     sbs_export_tag = character(0),
@@ -555,8 +554,7 @@ flatten_choices = function(
   questions = purrr::keep(
     .x = survey[['Questions']],
     .p = function(x){
-      x[['QuestionType']] %in% c('MC', 'Matrix', 'DD', 'SBS') |
-        x[['Selector']] == 'FORM'
+      x[['QuestionType']] %in% c('MC', 'Matrix', 'DD', 'SBS')
     }
   )
 
@@ -827,6 +825,7 @@ get_column_map = function(
 
   # Set aside for error check:
   column_map_nrow = nrow(column_map)
+
 
   #  Loop number ------------------------------------------------------------
 
@@ -1109,7 +1108,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       TEXT = dplyr::case_when(
-        text_entry == 1 ~ '_TEXT',
+        text_entry == 1 & !(question_id %in% text_question_ids) ~ '_TEXT',
         TRUE ~ ''
       ),
       suffix = dplyr::case_when(
@@ -1121,6 +1120,7 @@ get_column_map = function(
 
 
   # Question names -------------------------------------------------------------
+
 
   # Now we're on to styling up our custom names:
   question_names = survey_flat[['blocks']] |>
@@ -1150,7 +1150,7 @@ get_column_map = function(
       question_id
     )
 
-  column_map = dplyr::right_join(
+  column_map = dplyr::left_join(
     x = question_names,
     y = column_map,
     by = 'question_id'
