@@ -104,27 +104,6 @@ flatten_survey = function(
     dplyr::select(-question_number, -block_description) |>
     dplyr::relocate(question_name, .after = block_id)
 
-  # Flag numeric choices:
-  numeric_choices = survey_flat |>
-    purrr::pluck('choices') |>
-    dplyr::distinct(question_id, sbs_number) |>
-    dplyr::mutate(is_numeric_choice = 1L)
-
-  survey_flat$columns = survey_flat |>
-    purrr::pluck('columns') |>
-    dplyr::left_join(
-      numeric_choices,
-      by = c('question_id', 'sbs_number'),
-      relationship = 'many-to-one'
-    ) |>
-    dplyr::mutate(
-      is_numeric_choice = dplyr::case_when(
-        text_entry == 1L ~ 0L,
-        TRUE ~ tidyr::replace_na(is_numeric_choice, 0L)
-      )
-    ) |>
-    dplyr::relocate(is_numeric_choice, .after = checkbox_number)
-
   # Validate some of the ouput:
   stopifnot(
     all(
@@ -628,7 +607,7 @@ flatten_choices = function(
           choice_recode = NA_integer_,
           choice_description = purrr::map_chr(.x = column_choices, .f = purrr::pluck, 'Display', .default = NA_character_),
           # The columns don't have text entry
-          choice_text_entry = 0L,
+          has_text_entry = 0L,
           choice_analyze = 1L
         )
 
@@ -675,7 +654,7 @@ flatten_choices = function(
         choice = as.integer(names(choices)),
         choice_recode = recodes,
         choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_),
-        choice_text_entry = purrr::map_int(choices, function(x){'TextEntry' %in% names(x)})
+        has_text_entry = purrr::map_int(choices, function(x){'TextEntry' %in% names(x)})
       )
 
       # Choice analyze kept in another piece:
@@ -729,20 +708,18 @@ flatten_choices = function(
     question_id = character(0),
     sbs_number = integer(0),
     checkbox_number = integer(0),
-    choice_value = integer(0),
-    choice_description = character(0),
-    is_numeric_choice = integer(0),
-    choice_text_entry = integer(0),
     choice = integer(0),
     choice_order = integer(0),
     choice_recode = integer(0),
-    choice_analyze = integer(0)
+    choice_analyze = integer(0),
+    has_text_entry = integer(0),
+    choice_value = integer(0),
+    choice_description = character(0)
   ) |>
     dplyr::bind_rows(choice_df) |>
     dplyr::mutate(
       # Now create a derived column of what the user user probably wants:
-      choice_value = dplyr::coalesce(choice_value, choice_recode, choice),
-      is_numeric_choice = 1L
+      choice_value = dplyr::coalesce(choice_value, choice_recode, choice)
     )
 
 }
@@ -752,6 +729,8 @@ get_column_map = function(
     survey_id,
     file_format = c('spss', 'csv', 'tsv')
 ){
+
+  browser()
 
   file_format = rlang::arg_match(file_format)
 
@@ -1051,7 +1030,7 @@ get_column_map = function(
 
   column_map = column_map |>
     dplyr::mutate(
-      text_entry = as.integer(
+      is_text_entry = as.integer(
         stringr::str_detect(
           string = suffix,
           pattern = 'TEXT'
@@ -1108,7 +1087,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       TEXT = dplyr::case_when(
-        text_entry == 1 & !(question_id %in% text_question_ids) ~ '_TEXT',
+        is_text_entry == 1 & !(question_id %in% text_question_ids) ~ '_TEXT',
         TRUE ~ ''
       ),
       suffix = dplyr::case_when(
@@ -1183,7 +1162,7 @@ get_column_map = function(
       subq_number,
       loop_number,
       choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice),
-      text_entry
+      is_text_entry
     ) |>
     dplyr::left_join(
       y = var_labs_harmonized,
@@ -1213,7 +1192,7 @@ get_column_map = function(
     ) |>
     dplyr::mutate(
       text_suffix = ifelse(
-        text_entry == 1,
+        is_text_entry == 1,
         ' - Text',
         ''
       ),
@@ -1272,9 +1251,10 @@ get_column_map = function(
       question_number = as.integer(question_number),
       subq_number,
       sbs_number,
-      checkbox_number,
       subq_order,
-      text_entry
+      choice_value,
+      checkbox_number,
+      is_text_entry
     )
 
   # Don't think we want to have any values for the embedded data value except
