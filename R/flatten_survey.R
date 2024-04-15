@@ -364,11 +364,13 @@ flatten_questions = function(
   )
 
   if(length(sbs_questions) > 0){
+
     get_sbs_columns = function(question_id){
 
       sbs_question = sbs_questions[[question_id]]
       sbs_columns = sbs_question[['AdditionalQuestions']]
-      tibble::tibble(
+
+      sbs_columns = tibble::tibble(
         question_id = question_id,
         is_sbs = 1L,
         sbs_number = as.integer(names(sbs_columns)),
@@ -378,6 +380,22 @@ flatten_questions = function(
         sbs_selector = purrr::map_chr(sbs_columns, purrr::pluck, 'Selector', .default = NA_character_),
         sbs_subselector = purrr::map_chr(sbs_columns, purrr::pluck, 'SubSelector', .default = NA_character_)
       )
+
+      if(!is.null(sbs_question$Configuration$ColumnOrder)){
+
+        sbs_columns = tibble::tibble(
+          sbs_number = as.integer(sbs_question$Configuration$ColumnOrder)
+        ) |>
+          dplyr::filter(sbs_number > 0) |>
+          dplyr::left_join(
+            y = sbs_columns,
+            by = 'sbs_number',
+            relationship = 'one-to-one'
+          )
+
+      }
+
+      dplyr::mutate(sbs_columns, sbs_order = dplyr::row_number())
 
     }
 
@@ -494,6 +512,7 @@ flatten_questions = function(
     subq_export_tag = character(0),
     subq_text = character(0),
     is_sbs = integer(0),
+    sbs_order = integer(0),
     sbs_number = integer(0),
     sbs_export_tag = character(0),
     sbs_text = character(0),
@@ -729,8 +748,6 @@ get_column_map = function(
     survey_id,
     file_format = c('spss', 'csv', 'tsv')
 ){
-
-  browser()
 
   file_format = rlang::arg_match(file_format)
 
@@ -1052,9 +1069,10 @@ get_column_map = function(
         question_export_tag,
         sbs_export_tag,
         subq_export_tag,
+        sbs_order,
         sbs_number,
-        subq_number,
-        subq_order
+        subq_order,
+        subq_number
       ),
       by = c('question_id', 'sbs_number', 'subq_number')
     )
@@ -1069,7 +1087,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       SBS = dplyr::case_when(
-        !is.na(sbs_number) ~ paste0('_SBS', pad2(sbs_number)),
+        !is.na(sbs_order) ~ paste0('_SBS', pad2(sbs_order)),
         TRUE ~ ''
       ),
       SQ = dplyr::case_when(
@@ -1237,21 +1255,22 @@ get_column_map = function(
       column_exported,
       column_harmonized = paste0(question_name, suffix),
       question_name,
+      question_number = as.integer(question_number),
       suffix,
       variable_label,
       variable_label_exported,
       question_export_tag,
       sbs_export_tag,
       subq_export_tag,
-      question_id,
       import_id,
       embedded_data,
-      loop_number,
       block_id,
-      question_number = as.integer(question_number),
+      question_id,
+      loop_number,
       subq_number,
-      sbs_number,
       subq_order,
+      sbs_number,
+      sbs_order,
       choice_value,
       checkbox_number,
       is_text_entry
