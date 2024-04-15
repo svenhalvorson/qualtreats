@@ -595,7 +595,8 @@ flatten_choices = function(
             column_question[['SubSelector']] == 'MultipleAnswer' ~ dplyr::coalesce(choice_recode, choice),
             .default = NA_integer_
           ),
-          choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_)
+          choice_description = purrr::map_chr(choices, purrr::pluck, 'Display', .default = NA_character_),
+          has_text_entry = 0L # Not possible as far as I know
         )
 
         column_choice_df
