@@ -1106,7 +1106,7 @@ get_column_map = function(
         TRUE ~ ''
       ),
       TEXT = dplyr::case_when(
-        is_text_entry == 1 & !(question_id %in% text_question_ids) ~ '_TEXT',
+        is_text_entry == 1 & (!(question_id %in% text_question_ids) | stringr::str_detect(column_exported, '_TEXT$')) ~ '_TEXT',
         TRUE ~ ''
       ),
       suffix = dplyr::case_when(
