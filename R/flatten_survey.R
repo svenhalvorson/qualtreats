@@ -866,7 +866,7 @@ get_column_map = function(
     )
 
 
-  # Column number ----------------------------------------------------------
+  # SBS ---------------------------------------------------------------------
 
   # We might be able to get away with recognizing pound signs
   # but let's try to not infer which questions are sbs:
@@ -876,6 +876,7 @@ get_column_map = function(
     dplyr::pull(question_id)
 
   # Add in the profiles since they act like a sbs
+  # TODO: is this necessary? I think we are/should be flagging them as is_sbs above
   profile_question_ids = survey_flat |>
     purrr::pluck('questions') |>
     dplyr::filter(question_selector == 'Profile') |>
@@ -884,13 +885,9 @@ get_column_map = function(
   column_map = column_map |>
     dplyr::mutate(
       sbs_number = dplyr::case_when(
-        question_id %in% profile_question_ids ~ stringr::str_extract(
+        question_id %in% c(profile_question_ids, sbs_question_ids) ~ stringr::str_extract(
           string = suffix,
           pattern = '[0-9]+'
-        ),
-        question_id %in% sbs_question_ids ~ stringr::str_extract(
-          string = suffix,
-          pattern = '^#[0-9]+_'
         )
       ),
       sbs_number = as.integer(
@@ -947,6 +944,23 @@ get_column_map = function(
       )
     )
 
+  # Export tags -------------------------------------------------------------
+
+  column_map = column_map |>
+    dplyr::left_join(
+      y = dplyr::select(
+        survey_flat[['questions']],
+        question_id,
+        sbs_number,
+        sbs_order,
+        subq_number,
+        subq_order,
+        question_export_tag,
+        sbs_export_tag,
+        subq_export_tag
+      ),
+      by = c('question_id', 'sbs_number', 'subq_number')
+    )
 
   # Choices -----------------------------------------------------------------
 
@@ -1060,26 +1074,9 @@ get_column_map = function(
       )
     )
 
-  # Export tags -------------------------------------------------------------
-
-  column_map = column_map |>
-    dplyr::left_join(
-      y = dplyr::select(
-        survey_flat[['questions']],
-        question_id,
-        question_export_tag,
-        sbs_export_tag,
-        subq_export_tag,
-        sbs_order,
-        sbs_number,
-        subq_order,
-        subq_number
-      ),
-      by = c('question_id', 'sbs_number', 'subq_number')
-    )
 
   # Nice suffix -------------------------------------------------------------
-
+  # TODO: Check with MEDS QID: do we have the labels for subq_number and subq_order correct?
   # now we use all that data we extracted to make the coded suffix:
   column_map = column_map |>
     dplyr::mutate(
@@ -1119,7 +1116,6 @@ get_column_map = function(
 
   # Question names -------------------------------------------------------------
 
-
   # Now we're on to styling up our custom names:
   question_names = survey_flat[['blocks']] |>
     dplyr::select(block_description, block_id) |>
@@ -1157,11 +1153,6 @@ get_column_map = function(
 
   # Prettier variable labels ------------------------------------------------
 
-  # TODO: signature suffixes are gone
-  # I'm finding that the variable labels exported both have unnecessary junk
-  # in them but also have truncated text. Let's see if we can pretty them up
-  # a bit:
-
   var_labs_harmonized = survey_flat[['questions']] |>
     dplyr::transmute(
       question_id,
@@ -1195,18 +1186,19 @@ get_column_map = function(
         dplyr::row_number() == 1 ~ question_description,
         TRUE ~ ''
       )
-    )
+    ) |>
+    dplyr::ungroup()
 
   # add choice descriptions and make the variable label:
-  var_labs_harmonized = survey_flat[['choices']] |>
-    dplyr::transmute(
-      question_id,
-      sbs_number,
-      choice_description = format_description(choice_description),
-      choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice)
-    ) |>
-    dplyr::right_join(
-      y = var_labs_harmonized,
+  var_labs_harmonized = var_labs_harmonized |>
+    dplyr::left_join(
+      y = dplyr::transmute(
+        survey_flat[['choices']],
+        question_id,
+        sbs_number,
+        choice_description = format_description(choice_description),
+        choice_join = dplyr::coalesce(checkbox_number, choice_recode, choice)
+      ),
       by = c('question_id', 'sbs_number', 'choice_join')
     ) |>
     dplyr::mutate(
@@ -1238,15 +1230,15 @@ get_column_map = function(
       )
     )
 
-  column_map = column_map |>
-    dplyr::left_join(
-      y = dplyr::select(
-        var_labs_harmonized,
-        column_exported,
-        variable_label
-      ),
-      by = 'column_exported'
-    )
+  column_map = dplyr::left_join(
+    x = column_map,
+    y = dplyr::select(
+      var_labs_harmonized,
+      column_exported,
+      variable_label
+    ),
+    by = 'column_exported'
+  )
 
   # Clean up ----------------------------------------------------------------
 
@@ -1267,7 +1259,7 @@ get_column_map = function(
       embedded_data,
       block_id,
       question_id,
-      loop_number,
+      loop_order,
       subq_number,
       subq_order,
       sbs_number,
