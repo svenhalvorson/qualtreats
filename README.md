@@ -1,8 +1,6 @@
 
 # qualtables
-
-This is still under development. If you find bugs or wish to
-collaborate, please contact me at <svenpubmail@gmail.com>
+I am in the process of hard forking this repository. The core idea of this is very good but there are some conceptual flaws in the current version. If you wish to collaborate, please contact me at <svenpubmail@gmail.com>
 
 *Huge thank you to authors of
 [qualtRics](https://github.com/ropensci/qualtRics). Appreciate
