@@ -575,7 +575,7 @@ flatten_choices = function(
 
         choices = column_question[['Answers']]
 
-        if(length(choices) == 0){
+        if(length(choices) == 0L){
           return(tibble::tibble(question_id = character(0)))
         }
 
